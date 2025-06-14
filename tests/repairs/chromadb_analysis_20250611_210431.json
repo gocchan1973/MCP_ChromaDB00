@@ -1,0 +1,17 @@
+{
+  "success": true,
+  "collections_count": 2,
+  "total_documents": 3,
+  "collections": [
+    {
+      "name": "development_conversations",
+      "id": "0c284e3b-50f9-4642-abb3-b5ed3d232de1",
+      "count": 2
+    },
+    {
+      "name": "test_collection",
+      "id": "ab206578-344b-47a0-b124-155e9f663bc7",
+      "count": 1
+    }
+  ]
+}

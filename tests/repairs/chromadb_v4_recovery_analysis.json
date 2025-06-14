@@ -1,0 +1,88 @@
+{
+  "analysis_timestamp": "2025-06-11T22:52:32.834012",
+  "approach": "MySisterDB_inspired_fix",
+  "database_path": "F:\\副業\\VSC_WorkSpace\\IrukaWorkspace\\shared__ChromaDB_v4",
+  "analysis_results": [
+    {
+      "method": "search_based_analysis",
+      "status": "good",
+      "details": {
+        "search_tests": {
+          "テスト": {
+            "success": true,
+            "count": 3,
+            "has_distances": true
+          },
+          "会話": {
+            "success": true,
+            "count": 3,
+            "has_distances": true
+          },
+          "システム": {
+            "success": true,
+            "count": 3,
+            "has_distances": true
+          },
+          "AI": {
+            "success": true,
+            "count": 3,
+            "has_distances": true
+          },
+          "学習": {
+            "success": true,
+            "count": 3,
+            "has_distances": true
+          }
+        },
+        "vector_quality_indirect": {
+          "min_distance": 1.338064193725586,
+          "max_distance": 1.456363558769226,
+          "avg_distance": 1.4002086400985718,
+          "distance_range": 0.11829936504364014
+        },
+        "data_integrity": {
+          "sample_documents": 10,
+          "has_metadata": true,
+          "basic_access_success": true
+        }
+      },
+      "score": 85
+    },
+    {
+      "method": "embedding_workaround",
+      "attempts": [
+        {
+          "method": "single_get",
+          "success": false,
+          "error": "The truth value of an array with more than one element is ambiguous. Use a.any() or a.all()"
+        },
+        {
+          "method": "query_embeddings",
+          "success": true,
+          "details": "クエリ経由embedding次元: 384"
+        }
+      ]
+    }
+  ],
+  "overall_status": "RECOVERABLE",
+  "recommendation": "修復可能 - embedding回避で継続学習対応",
+  "recovery_strategy": {
+    "immediate_actions": [
+      "検索機能ベースの分析継続",
+      "embedding直接取得を回避した運用",
+      "検索品質の継続監視",
+      "embedding回避策の本格採用"
+    ],
+    "medium_term_plan": [
+      "embedding取得の代替手法開発",
+      "numpy互換性問題の段階的解決",
+      "ChromaDBバージョン最適化検討",
+      "回避策ベースの継続学習システム構築"
+    ],
+    "long_term_vision": [
+      "安定した継続学習環境の確立",
+      "次世代ベクターDB技術への段階移行",
+      "AI知識蓄積システムの完成"
+    ]
+  }
+}

@@ -1,0 +1,54 @@
+{
+  "success": true,
+  "collections_count": 2,
+  "total_documents": 105,
+  "functional_collections": 2,
+  "consistent_collections": 2,
+  "collections": [
+    {
+      "name": "sister_chat_history",
+      "id": "03b2e3a3-bedc-460a-b63b-461a84bfbee1",
+      "count": 100
+    },
+    {
+      "name": "my_sister_context",
+      "id": "9ff6616d-f825-41f8-89e1-2bc1bf284580",
+      "count": 5
+    }
+  ],
+  "index_info": {
+    "sister_chat_history": {
+      "has_embeddings": true,
+      "vectorized_documents": 100,
+      "vectorization_ratio": 1.0,
+      "search_functional": true,
+      "metadata_keys": [
+        "updated_timestamp",
+        "type",
+        "timestamp",
+        "original_length",
+        "summary_length",
+        "update_reason",
+        "genres"
+      ]
+    },
+    "my_sister_context": {
+      "has_embeddings": true,
+      "vectorized_documents": 5,
+      "vectorization_ratio": 1.0,
+      "search_functional": true,
+      "metadata_keys": [
+        "source"
+      ]
+    }
+  },
+  "sqlite_info": {
+    "file_size_mb": 2.8125,
+    "collections_count": 2,
+    "embeddings_count": 205,
+    "embedding_metadata_count": 1412,
+    "segments_count": 4,
+    "custom_indexes": 3
+  },
+  "analysis_timestamp": "2025-06-11T21:33:27.007405"
+}

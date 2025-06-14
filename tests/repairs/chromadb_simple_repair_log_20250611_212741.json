@@ -1,0 +1,4 @@
+{
+  "success": false,
+  "error": "cannot VACUUM from within a transaction"
+}

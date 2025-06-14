@@ -1,0 +1,8 @@
+{
+  "success": true,
+  "collections_count": 2,
+  "total_documents": 3,
+  "collections": [
+    {
+      "name": "development_conversations",
+      "id": 

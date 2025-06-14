@@ -1,0 +1,76 @@
+{
+  "success": true,
+  "collections_count": 4,
+  "total_documents": 105,
+  "functional_collections": 2,
+  "consistent_collections": 2,
+  "collections": [
+    {
+      "name": "sister_chat_history",
+      "id": "09e561a3-b7e6-435a-b677-248ddfb90be1",
+      "count": 0
+    },
+    {
+      "name": "my_sister_context",
+      "id": "7aace0d5-b1e0-454b-8c08-15fe650b50e2",
+      "count": 0
+    },
+    {
+      "name": "my_sister_context_temp_repair",
+      "id": "bb1adf70-d0d5-4696-a34b-1a97e16dd82f",
+      "count": 5
+    },
+    {
+      "name": "sister_chat_history_temp_repair",
+      "id": "c7050d00-6757-4d8e-8581-36d2a5921ecc",
+      "count": 100
+    }
+  ],
+  "index_info": {
+    "sister_chat_history": {
+      "has_embeddings": false,
+      "vectorized_documents": 0,
+      "vectorization_ratio": 0.0,
+      "search_functional": false
+    },
+    "my_sister_context": {
+      "has_embeddings": false,
+      "vectorized_documents": 0,
+      "vectorization_ratio": 0.0,
+      "search_functional": false
+    },
+    "my_sister_context_temp_repair": {
+      "has_embeddings": true,
+      "vectorized_documents": 5,
+      "vectorization_ratio": 1.0,
+      "search_functional": true,
+      "metadata_keys": [
+        "source"
+      ]
+    },
+    "sister_chat_history_temp_repair": {
+      "has_embeddings": true,
+      "vectorized_documents": 100,
+      "vectorization_ratio": 1.0,
+      "search_functional": true,
+      "metadata_keys": [
+        "update_reason",
+        "type",
+        "summary_length",
+        "genres",
+        "original_length",
+        "timestamp",
+        "updated_timestamp"
+      ]
+    }
+  },
+  "sqlite_info": {
+    "file_size_mb": 6.2421875,
+    "collections_count": 4,
+    "embeddings_count": 520,
+    "embedding_metadata_count": 3842,
+    "segments_count": 8,
+    "custom_indexes": 3
+  },
+  "analysis_timestamp": "2025-06-11T21:49:41.728568"
+}

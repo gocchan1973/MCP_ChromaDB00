@@ -1,0 +1,28 @@
+{
+  "success": true,
+  "total_documents": 105,
+  "collections_count": 2,
+  "index_analysis": {
+    "my_sister_context": {
+      "collection_id": "9ff6616d-f825-41f8-89e1-2bc1bf284580",
+      "dimension": 384,
+      "segments": 2,
+      "embedding_records": 5,
+      "metadata_records": 10,
+      "fulltext_records": 112,
+      "queue_records": 107,
+      "has_vectors": true
+    },
+    "sister_chat_history": {
+      "collection_id": "f244b609-e56f-4b3d-b380-9dfc97e91f9b",
+      "dimension": 384,
+      "segments": 2,
+      "embedding_records": 100,
+      "metadata_records": 602,
+      "fulltext_records": 112,
+      "queue_records": 107,
+      "has_vectors": true
+    }
+  },
+  "analysis_timestamp": "2025-06-11T21:20:13.050754"
+}

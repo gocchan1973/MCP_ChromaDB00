@@ -1,0 +1,12 @@
+{
+  "success": true,
+  "deleted_collection": "vbv",
+  "deleted_documents": 7,
+  "remaining_collections": [
+    "Tech",
+    "conversation_history",
+    "my_sister_context",
+    "sister_chat_history"
+  ],
+  "deletion_timestamp": "2025-06-11T21:18:29.444203"
+}

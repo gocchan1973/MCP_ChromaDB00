@@ -1,0 +1,31 @@
+{
+  "tool_naming": {
+    "use_prefix": false,
+    "prefix": "",
+    "separator": "_"
+  },  "default_collection": {
+    "name": "sister_chat_history_v4",
+    "description": "完全復旧済みのメインコレクション（765文書、HNSWインデックス完全修復済み）"
+  },  "database": {
+    "path": "f:/副業/VSC_WorkSpace/IrukaWorkspace/shared__ChromaDB_",
+    "host": "localhost", 
+    "port": 8000
+  },
+  "server": {
+    "name": "ChromaDB Modular MCP Server",
+    "version": "1.0.0",
+    "description": "Advanced ChromaDB server with modular tool architecture"
+  },
+  "features": {
+    "auto_backup": true,
+    "conversation_capture": true,
+    "analytics": true,
+    "optimization": true
+  },
+  "logging": {
+    "level": "INFO",
+    "format": "%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    "file_enabled": true,
+    "console_enabled": true
+  }
+}

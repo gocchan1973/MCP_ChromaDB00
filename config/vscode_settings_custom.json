@@ -1,0 +1,9 @@
+{
+  "mcp.servers": {
+    "chroma": {
+      "command": "python",
+      "args": ["src/fastmcp_main.py"],
+      "cwd": "f:/副業/VSC_WorkSpace/MCP_ChromaDB00"
+    }
+  }
+}

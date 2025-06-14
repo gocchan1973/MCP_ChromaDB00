@@ -1,0 +1,100 @@
+{
+  "development_conversations": {
+    "collection_name": "development_conversations",
+    "document_count": 2,
+    "metadata_keys": [
+      "project",
+      "conversation_length",
+      "category",
+      "source",
+      "skill_level",
+      "technologies",
+      "status",
+      "timestamp"
+    ],
+    "key_statistics": {
+      "project": {
+        "count": 1,
+        "unique_values": 1,
+        "sample_values": [
+          "MCP_ChromaDB00復旧作業"
+        ]
+      },
+      "conversation_length": {
+        "count": 1,
+        "unique_values": 1,
+        "sample_values": [
+          "3"
+        ]
+      },
+      "category": {
+        "count": 1,
+        "unique_values": 1,
+        "sample_values": [
+          "プロジェクト復旧・MCP統合"
+        ]
+      },
+      "source": {
+        "count": 2,
+        "unique_values": 2,
+        "sample_values": [
+          "github_copilot",
+          "recovery"
+        ]
+      },
+      "skill_level": {
+        "count": 1,
+        "unique_values": 1,
+        "sample_values": [
+          "上級"
+        ]
+      },
+      "technologies": {
+        "count": 1,
+        "unique_values": 1,
+        "sample_values": [
+          "Python,ChromaDB,MCP,VSCode,FastAPI"
+        ]
+      },
+      "status": {
+        "count": 1,
+        "unique_values": 1,
+        "sample_values": [
+          "完了"
+        ]
+      },
+      "timestamp": {
+        "count": 2,
+        "unique_values": 2,
+        "sample_values": [
+          "2025-06-07T16:37:01.529939",
+          "2025-06-07T06:24:32.405853"
+        ]
+      }
+    }
+  },
+  "test_collection": {
+    "collection_name": "test_collection",
+    "document_count": 1,
+    "metadata_keys": [
+      "source",
+      "timestamp"
+    ],
+    "key_statistics": {
+      "source": {
+        "count": 1,
+        "unique_values": 1,
+        "sample_values": [
+          "test"
+        ]
+      },
+      "timestamp": {
+        "count": 1,
+        "unique_values": 1,
+        "sample_values": [
+          "2025-06-08"
+        ]
+      }
+    }
+  }
+}
