@@ -16,8 +16,7 @@ def safe_vector_analysis(embeddings: List[List[float]], analysis_type: str = "st
     
     analysis = {
         "total_vectors": len(embeddings),
-        "dimensions": len(embeddings[0]) if embeddings[0] else 0,
-        "status": "success"
+        "dimensions": len(embeddings[0]) if embeddings[0] else 0,        "status": "success"
     }
     
     try:
@@ -27,7 +26,11 @@ def safe_vector_analysis(embeddings: List[List[float]], analysis_type: str = "st
         elif analysis_type == "similarity":
             analysis.update(_safe_similarity_analysis(embeddings))
         elif analysis_type == "clustering":
+            # クラスタリング分析は簡略化して実装
             analysis.update(_safe_clustering_analysis(embeddings))
+        else:
+            analysis["error"] = f"Unsupported analysis type: {analysis_type}"
+            analysis["status"] = "failed"
         
     except Exception as e:
         analysis["error"] = f"Vector analysis error: {str(e)}"
@@ -116,19 +119,42 @@ def _safe_similarity_analysis(embeddings: List[List[float]]) -> Dict[str, Any]:
     return {"similarity_analysis": similarity_stats}
 
 def _safe_clustering_analysis(embeddings: List[List[float]]) -> Dict[str, Any]:
-    """安全なクラスタリング分析"""
-    return {
+    """安全なクラスタリング分析（改良版）"""
+    clustering = {
         "clustering_analysis": {
-            "note": "Basic clustering analysis",
             "sample_size": len(embeddings),
-            "analysis_available": len(embeddings) > 1
+            "analysis_available": len(embeddings) > 1,
+            "cluster_estimate": "unknown",
+            "variance_info": {}
         }
     }
+    
+    if len(embeddings) > 1 and embeddings[0]:
+        # 基本的な分散分析
+        dimensions = len(embeddings[0])
+        if dimensions > 0:
+            variances = []
+            for dim in range(min(dimensions, 10)):  # 最大10次元まで
+                values = [emb[dim] for emb in embeddings if emb and len(emb) > dim]
+                if len(values) > 1:
+                    mean_val = sum(values) / len(values)
+                    variance = sum((v - mean_val) ** 2 for v in values) / len(values)
+                    variances.append(variance)
+            
+            if variances:
+                avg_variance = sum(variances) / len(variances)
+                clustering["clustering_analysis"]["variance_info"] = {
+                    "average_variance": avg_variance,
+                    "dimensions_analyzed": len(variances)
+                }
+                clustering["clustering_analysis"]["cluster_estimate"] = "high_variance" if avg_variance > 0.1 else "low_variance"
+    
+    return clustering
 
 def _safe_cosine_similarity(vec1: List[float], vec2: List[float]) -> float:
     """安全なコサイン類似度計算"""
     if not vec1 or not vec2 or len(vec1) != len(vec2):
-        return None
+        return 0.0  # None の代わりに 0.0 を返す
     
     dot_product = sum(a * b for a, b in zip(vec1, vec2))
     
@@ -176,9 +202,7 @@ def safe_integrity_check(embeddings: List[List[float]]) -> Dict[str, Any]:
         # 次元チェック
         if len(embedding) != expected_dim:
             check_results["dimension_consistency"] = False
-            check_results["issues"].append(f"Embedding {i} has inconsistent dimensions")
-        
-        # ゼロベクトルチェック
+            check_results["issues"].append(f"Embedding {i} has inconsistent dimensions")        # ゼロベクトルチェック
         is_zero = all(abs(val) < 1e-10 for val in embedding)
         if is_zero:
             check_results["zero_embeddings"] += 1
