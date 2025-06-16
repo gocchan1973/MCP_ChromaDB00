@@ -14,7 +14,6 @@ sys.path.insert(0, str(project_root))
 def test_mcp_vector_analysis():
     """実際のMCPベクトル分析関数をテスト"""
     try:
-        from tools.collection_inspection import _analyze_vector_space_direct
         import chromadb
         
         # ダミーのコレクションとエンベディングでテスト

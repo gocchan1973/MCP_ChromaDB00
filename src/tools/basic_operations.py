@@ -253,37 +253,72 @@ def register_basic_operations_tools(mcp: Any, db_manager: Any):
             if language:
                 filters["language"] = language
             if category:
-                filters["category"] = category
-            
-            # 高度な検索を使用
-            results = chroma_search_advanced(
+                filters["category"] = category            # db_managerから直接検索
+            search_results_raw = db_manager.search(
                 query=query,
                 collection_name=collection_name,
-                n_results=n_results,
-                filters=filters,
-                include_metadata=True,
-                similarity_threshold=0.5
+                n_results=n_results * 2
             )
+              
+            # 検索結果を基本検索の形式に整形
+            basic_results = {"results": []}
+            if search_results_raw.get("success") and search_results_raw.get("results"):
+                search_results = search_results_raw["results"]
+                documents = search_results.get("documents", [])
+                metadatas = search_results.get("metadatas", [])
+                distances = search_results.get("distances", [])
+                
+                if documents and len(documents) > 0:
+                    for i, doc in enumerate(documents[0]):
+                        result_item = {
+                            "index": i + 1,
+                            "content": doc,
+                            "relevance_score": distances[0][i] if distances and len(distances[0]) > i else None,
+                            "metadata": metadatas[0][i] if metadatas and len(metadatas[0]) > i else {}
+                        }
+                        basic_results["results"].append(result_item)
             
-            # 日付フィルターを後処理で適用
-            if date_from or date_to:
-                filtered_results = []
-                for result in results.get("results", []):
+            # フィルター検索結果の構造を作成
+            results = {
+                "query": query,
+                "collection": collection_name,
+                "filters_applied": filters,
+                "similarity_threshold": 0.5,
+                "results": [],
+                "total_found": 0
+            }
+              # フィルター条件に基づいて基本検索の結果をフィルターする
+            if basic_results.get("results"):
+                for result in basic_results["results"]:
                     metadata = result.get("metadata", {})
-                    timestamp = metadata.get("timestamp", "")
-                    
-                    # 簡単な日付比較（実際の実装では適切な日付パースが必要）
                     include_result = True
+                    
+                    # プロジェクトフィルター
+                    if project and metadata.get("project") != project:
+                        include_result = False
+                    
+                    # 言語フィルター
+                    if language and metadata.get("language") != language:
+                        include_result = False
+                    
+                    # カテゴリフィルター
+                    if category and metadata.get("category") != category:
+                        include_result = False
+                    
+                    # 日付フィルター（簡単な文字列比較）
+                    timestamp = metadata.get("timestamp", "")
                     if date_from and timestamp < date_from:
                         include_result = False
                     if date_to and timestamp > date_to:
                         include_result = False
                     
                     if include_result:
-                        filtered_results.append(result)
-                
-                results["results"] = filtered_results
-                results["total_found"] = len(filtered_results)
+                        results["results"].append(result)
+                        # 結果数制限
+                        if len(results["results"]) >= n_results:
+                            break
+            
+            results["total_found"] = len(results["results"])
             
             # フィルター情報を追加
             results["applied_filters"] = {
@@ -299,4 +334,10 @@ def register_basic_operations_tools(mcp: Any, db_manager: Any):
             
         except Exception as e:
             logger.error(f"Filtered search failed: {e}")
-            return {"error": str(e), "query": query, "filters": filters}
+            return {"error": str(e), "query": query, "applied_filters": {
+                "project": project,
+                "language": language,
+                "category": category,
+                "date_from": date_from,
+                "date_to": date_to
+            }}

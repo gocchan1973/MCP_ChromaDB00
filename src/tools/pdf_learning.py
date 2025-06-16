@@ -13,6 +13,7 @@ from typing import List, Dict, Any, Optional
 import re
 import mcp.types as types
 from mcp.server import Server
+import mcp
 
 # PDF処理用ライブラリ
 try:
@@ -21,6 +22,8 @@ try:
     PDF_AVAILABLE = True
 except ImportError:
     PDF_AVAILABLE = False
+    extract_text = None
+    LAParams = None
 
 # 相対インポート対応
 try:
@@ -62,7 +65,7 @@ def split_text_into_chunks(text: str, chunk_size: int = 1000, overlap: int = 200
 
 def extract_pdf_content(pdf_path: str) -> str:
     """PDFからテキストを抽出"""
-    if not PDF_AVAILABLE:
+    if not PDF_AVAILABLE or extract_text is None or LAParams is None:
         raise ImportError("pdfminer.sixが必要です。pip install pdfminer.six をしてください")
     
     try:
@@ -85,11 +88,11 @@ def extract_pdf_content(pdf_path: str) -> str:
     except Exception as e:
         raise Exception(f"PDF処理エラー: {str(e)}")
 
-def register_pdf_learning_tools(mcp: Server, db_manager):
+def register_pdf_learning_tools(mcp_server, db_manager):
     """PDF学習関連のツールを登録"""
     
-    @mcp.tool("bb7_chroma_store_pdf")
-    async def store_pdf(
+    @mcp_server.tool()
+    def bb7_chroma_store_pdf(
         pdf_path: str,
         collection_name: Optional[str] = None,
         chunk_size: int = 1000,
@@ -203,14 +206,13 @@ def register_pdf_learning_tools(mcp: Server, db_manager):
             return {
                 "success": False,
                 "error": f"PDF学習エラー: {str(e)}",
-                "details": {
-                    "file_path": pdf_path,
+                "details": {                    "file_path": pdf_path,
                     "collection": collection_name
                 }
             }
     
-    @mcp.tool("bb7_chroma_store_directory_files")
-    async def store_directory_files(
+    @mcp_server.tool()
+    def bb7_chroma_store_directory_files(
         directory_path: str,
         file_types: Optional[List[str]] = None,
         collection_name: Optional[str] = None,
@@ -285,17 +287,59 @@ def register_pdf_learning_tools(mcp: Server, db_manager):
                     "project": project or "MCP_ChromaDB"
                 }
             }
-            
-            # 各ファイルを処理
+              # 各ファイルを処理
             for file_path in target_files:
                 try:
                     if file_path.suffix.lower() == '.pdf':
-                        # PDF処理
-                        result = await store_pdf(
-                            str(file_path), 
-                            collection_name,
-                            project=project
+                        # PDF処理（store_pdfメソッドのロジックを直接実装）
+                        pdf_text = extract_pdf_content(str(file_path))
+                        if not pdf_text:
+                            raise Exception("PDFからテキストを抽出できませんでした")
+                        
+                        # テキストをチャンクに分割
+                        chunks = split_text_into_chunks(pdf_text, 1000, 200)
+                        
+                        # ChromaDBに保存
+                        collection = db_manager.get_collection(collection_name)
+                        timestamp = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
+                        pdf_filename = file_path.name
+                        
+                        documents = []
+                        metadatas = []
+                        ids = []
+                        
+                        for i, chunk in enumerate(chunks):
+                            chunk_id = f"pdf_{timestamp}_{i:03d}"
+                            
+                            documents.append(chunk)
+                            metadatas.append({
+                                "source": pdf_filename,
+                                "source_type": "pdf",
+                                "chunk_index": i,
+                                "total_chunks": len(chunks),
+                                "timestamp": timestamp,
+                                "category": "document",
+                                "project": project or "MCP_ChromaDB",
+                                "file_path": str(file_path),
+                                "chunk_size": 1000,
+                                "text_length": len(chunk)
+                            })
+                            ids.append(chunk_id)
+                        
+                        # バッチでChromaDBに追加
+                        collection.add(
+                            documents=documents,
+                            metadatas=metadatas,
+                            ids=ids
                         )
+                        
+                        result = {
+                            "success": True,
+                            "details": {
+                                "chunks_count": len(chunks),
+                                "total_text_length": len(pdf_text)
+                            }
+                        }
                     else:
                         # テキストファイル処理
                         with open(file_path, 'r', encoding='utf-8') as f:
@@ -362,12 +406,11 @@ def register_pdf_learning_tools(mcp: Server, db_manager):
                 "error": f"ディレクトリ一括学習エラー: {str(e)}",
                 "details": {
                     "directory_path": directory_path,
-                    "collection": collection_name
-                }
+                    "collection": collection_name                }
             }
     
-    @mcp.tool("bb7_chroma_check_pdf_support")
-    async def check_pdf_support() -> Dict[str, Any]:
+    @mcp_server.tool()
+    def bb7_chroma_check_pdf_support() -> Dict[str, Any]:
         """
         PDF処理サポート状況を確認
         Returns: サポート状況情報

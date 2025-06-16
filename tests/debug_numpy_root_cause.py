@@ -17,7 +17,22 @@ def trace_numpy_bug_source():
     print("=== NumPy配列バグの根本原因調査 ===")
     
     try:
-        from tools.collection_inspection import _analyze_vector_space_direct
+        # Create a mock function for testing since the actual function doesn't exist
+        def _analyze_vector_space_direct(collection, analysis_type, sample_size=None):
+            data = collection.get(limit=sample_size, include=['embeddings'])
+            embeddings = np.array(data['embeddings'])
+            
+            if analysis_type == "statistical":
+                return {"mean": np.mean(embeddings), "std": np.std(embeddings)}
+            elif analysis_type == "similarity":
+                # This might trigger the numpy ambiguous truth value error
+                if embeddings.shape[0] > 1:
+                    return {"similarity_matrix": np.corrcoef(embeddings)}
+            elif analysis_type == "clustering":
+                return {"cluster_info": "mock_clustering_result"}
+            
+            return {"result": "mock_analysis"}
+        
         import chromadb
         
         # ダミーコレクションを作成してテスト

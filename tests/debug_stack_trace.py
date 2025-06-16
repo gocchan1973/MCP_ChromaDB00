@@ -15,7 +15,39 @@ sys.path.insert(0, str(project_root))
 def deep_stack_trace_analysis():
     """詳細なスタックトレース分析"""
     try:
-        from tools.collection_inspection import _analyze_vector_space_direct
+        # Mock implementation of _analyze_vector_space_direct
+        def _analyze_vector_space_direct(collection, analysis_type="clustering", sample_size=3):
+            import numpy as np
+            
+            # Mock KMeans class to avoid sklearn dependency
+            class MockKMeans:
+                def __init__(self, n_clusters=2, random_state=42):
+                    self.n_clusters = n_clusters
+                    self.random_state = random_state
+                
+                def fit_predict(self, X):
+                    # Return mock cluster labels
+                    return np.array([0, 1, 0])
+            
+            # Get embeddings from collection
+            data = collection.get(limit=sample_size, include=['embeddings'])
+            embeddings = data.get('embeddings', [])
+            
+            if not embeddings:
+                return {"error": "No embeddings found"}
+            
+            # Convert to numpy array
+            embeddings_array = np.array(embeddings)
+            
+            if analysis_type == "clustering":
+                # This line will likely trigger the ambiguous truth value error
+                if embeddings_array:  # This causes the error
+                    kmeans = MockKMeans(n_clusters=2, random_state=42)
+                    labels = kmeans.fit_predict(embeddings_array)
+                    return {"clusters": labels.tolist()}
+            
+            return {"result": "analysis complete"}
+        
         import chromadb
         
         print("=== 詳細スタックトレース分析 ===")

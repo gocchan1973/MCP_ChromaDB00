@@ -3,7 +3,7 @@ Global configuration settings for ChromaDB MCP Server
 グローバル設定ファイル（推測処理除去・確実な設定管理）
 """
 
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 import os
 import json
 from pathlib import Path
@@ -55,11 +55,10 @@ class GlobalSettings:
                 "prefix": "",  # bb7から空文字に変更
                 "separator": "_"
             },
-            
-            # デフォルトコレクション設定
+              # デフォルトコレクション設定
             "default_collection": {
-                "name": "sister_chat_history_temp_repair",
-                "description": "個人開発者のAI統合技術活用データ（775ドキュメント・正常稼働）"
+                "name": "sister_chat_history_v4",
+                "description": "個人開発者のAI統合技術活用データ（データベース刷新後・正常稼働）"
             },
             
             # データベース設定
@@ -190,7 +189,7 @@ class GlobalSettings:
         """設定を辞書形式でエクスポート"""
         return self._settings.copy()
     
-    def load_from_file(self, config_path: str = None) -> None:
+    def load_from_file(self, config_path: Optional[str] = None) -> None:
         """設定ファイルから読み込み（JSON）"""
         if config_path is None:
             config_path = str(self._config_file)
@@ -204,7 +203,7 @@ class GlobalSettings:
         except json.JSONDecodeError as e:
             print(f"設定ファイルの形式が正しくありません: {e}")
     
-    def save_to_file(self, config_path: str = None) -> None:
+    def save_to_file(self, config_path: Optional[str] = None) -> None:
         """設定をファイルに保存（JSON）"""
         if config_path is None:
             config_path = str(self._config_file)
