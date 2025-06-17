@@ -20,6 +20,7 @@ try:
     HTML_AVAILABLE = True
 except ImportError:
     HTML_AVAILABLE = False
+    BeautifulSoup = None  # type: ignore
 
 # 相対インポート対応
 try:
@@ -40,21 +41,24 @@ def extract_html_content(html_path: str) -> Dict[str, Any]:
         with open(html_path, 'r', encoding='utf-8', errors='ignore') as file:
             html_content = file.read()
         
-        soup = BeautifulSoup(html_content, 'html.parser')
+        soup = BeautifulSoup(html_content, 'html.parser')  # type: ignore
         
         # メタデータ抽出
         title = soup.find('title')
         title_text = title.get_text().strip() if title else os.path.basename(html_path)
-        
-        # メタタグからの情報抽出
+          # メタタグからの情報抽出
         meta_description = ""
         meta_keywords = ""
-        meta_tags = soup.find_all('meta')
-        for meta in meta_tags:
-            if meta.get('name') == 'description':
-                meta_description = meta.get('content', '')
-            elif meta.get('name') == 'keywords':
-                meta_keywords = meta.get('content', '')
+        try:
+            meta_tags = soup.find_all('meta')
+            for meta in meta_tags:
+                attrs = getattr(meta, 'attrs', {})
+                if attrs.get('name') == 'description':
+                    meta_description = attrs.get('content', '')
+                elif attrs.get('name') == 'keywords':
+                    meta_keywords = attrs.get('content', '')
+        except:
+            pass
         
         # 不要な要素を削除
         for script in soup(["script", "style", "nav", "footer", "header"]):
@@ -78,21 +82,23 @@ def extract_html_content(html_path: str) -> Dict[str, Any]:
         for i in range(1, 7):
             for heading in soup.find_all(f'h{i}'):
                 headings.append({
-                    'level': i,
-                    'text': heading.get_text().strip()
+                    'level': i,                    'text': heading.get_text().strip()
                 })
         
         # リンクの抽出
         links = []
         for link in soup.find_all('a', href=True):
-            href = link['href']
-            link_text = link.get_text().strip()
-            if href and link_text:
-                links.append({
-                    'url': href,
-                    'text': link_text
-                })
-        
+            try:
+                attrs = getattr(link, 'attrs', {})
+                href = attrs.get('href', '')
+                link_text = link.get_text().strip() if hasattr(link, 'get_text') else ''
+                if href and link_text:
+                    links.append({
+                        'url': href,
+                        'text': link_text
+                    })
+            except:
+                continue        
         return {
             'title': title_text,
             'content': text_content,
@@ -179,11 +185,11 @@ def split_text_into_chunks(text: str, chunk_size: int = 1000, overlap: int = 200
     
     return [chunk for chunk in chunks if len(chunk.strip()) > 50]
 
-def register_html_learning_tools(mcp: Server, db_manager):
+def register_html_learning_tools(mcp: Any, db_manager: Any):
     """HTML学習関連のツールを登録"""
     
-    @mcp.tool("bb8_chroma_store_html")
-    async def store_html(
+    @mcp.tool()
+    async def bb8_chroma_store_html(
         html_path: str,
         collection_name: Optional[str] = None,
         chunk_size: int = 1000,
@@ -380,10 +386,8 @@ def register_html_learning_tools(mcp: Server, db_manager):
                 "success": False,
                 "error": f"HTML学習エラー: {str(e)}",
                 "details": {"file_path": html_path}
-            }
-    
-    @mcp.tool("bb8_chroma_store_html_folder")
-    async def store_html_folder(
+            }    @mcp.tool()
+    async def bb8_chroma_store_html_folder(
         folder_path: str,
         collection_name: Optional[str] = None,
         chunk_size: int = 1000,
@@ -437,7 +441,7 @@ def register_html_learning_tools(mcp: Server, db_manager):
             total_characters = 0
             
             for html_file in html_files:
-                result = await store_html(
+                result = await bb8_chroma_store_html(
                     html_path=html_file,
                     collection_name=collection_name,
                     chunk_size=chunk_size,
