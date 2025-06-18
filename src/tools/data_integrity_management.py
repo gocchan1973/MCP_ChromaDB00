@@ -12,6 +12,24 @@ from typing import Dict, List, Any, Optional
 from datetime import datetime
 
 
+def _safe_content_preview(content: Any) -> str:
+    """安全なコンテンツプレビュー生成"""
+    try:
+        if content is None:
+            return "None"
+        
+        # 文字列に変換
+        content_str = str(content)
+        
+        # 長さ制限
+        if len(content_str) > 100:
+            return content_str[:100] + "..."
+        else:
+            return content_str
+    except Exception:
+        return "Preview unavailable"
+
+
 def register_data_integrity_tools(mcp, db_manager):
     """データ整合性管理ツールを登録"""
     
@@ -245,7 +263,7 @@ def register_data_integrity_tools(mcp, db_manager):
                     {
                         "group_id": i,
                         "document_count": len(group),
-                        "content_preview": group[0][:100] + "..." if len(group[0]) > 100 else group[0],
+                        "content_preview": _safe_content_preview(group[0]) if group else "Empty group",
                         "similarity_scores": []  # 安全版では無効
                     }
                     for i, group in enumerate(unified_groups) if len(group) > 1

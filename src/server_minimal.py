@@ -20,7 +20,7 @@ class ChromaDBMinimalServer:
             self.collection = self.client.create_collection(collection_name)
             print(f"新しいコレクション '{collection_name}' を作成しました")
 
-    def capture_conversation(self, title: str, content: str, tags: List[str] = None) -> Dict[str, Any]:
+    def capture_conversation(self, title: str, content: str, tags: Optional[List[str]] = None) -> Dict[str, Any]:
         """会話データをChromaDBに保存"""
         conversation_id = str(uuid.uuid4())
         metadata = {
@@ -53,12 +53,17 @@ class ChromaDBMinimalServer:
             )
             
             formatted_results = []
-            if results and "documents" in results and results["documents"]:
-                for i, (doc, metadata, id_val) in enumerate(zip(
-                    results["documents"][0],
-                    results["metadatas"][0],
-                    results["ids"][0]
-                )):
+            if (results and "documents" in results and results["documents"] and 
+                results.get("metadatas") and results.get("ids") and
+                results["documents"] and results["metadatas"] and results["ids"] and
+                len(results["documents"]) > 0 and len(results["metadatas"]) > 0 and len(results["ids"]) > 0 and
+                results["documents"][0] is not None and results["metadatas"][0] is not None and results["ids"][0] is not None):
+                
+                documents = results["documents"][0]
+                metadatas = results["metadatas"][0] 
+                ids = results["ids"][0]
+                
+                for i, (doc, metadata, id_val) in enumerate(zip(documents, metadatas, ids)):
                     formatted_results.append({
                         "id": id_val,
                         "title": metadata.get("title", "No Title"),

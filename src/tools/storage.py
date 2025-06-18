@@ -63,15 +63,27 @@ class ChromaDBStorage:
                 query_texts=[query],
                 n_results=limit
             )
-            
-            # 結果を整形
+              # 結果を整形
             formatted_results = []
-            if results and "documents" in results and results["documents"]:
-                for i, (doc, metadata, id_val) in enumerate(zip(
-                    results["documents"][0],
-                    results["metadatas"][0] if "metadatas" in results else [{} for _ in range(len(results["documents"][0]))],
-                    results["ids"][0] if "ids" in results else [f"unknown-{i}" for i in range(len(results["documents"][0]))]
-                )):
+            if results and "documents" in results and results["documents"] and results["documents"][0]:
+                documents = results["documents"][0]
+                doc_count = len(documents)
+                
+                # 安全なメタデータ取得
+                metadatas = []
+                if "metadatas" in results and results["metadatas"] and results["metadatas"][0]:
+                    metadatas = results["metadatas"][0]
+                else:
+                    metadatas = [{} for _ in range(doc_count)]
+                
+                # 安全なID取得
+                ids = []
+                if "ids" in results and results["ids"] and results["ids"][0]:
+                    ids = results["ids"][0]
+                else:
+                    ids = [f"unknown-{i}" for i in range(doc_count)]
+                
+                for i, (doc, metadata, id_val) in enumerate(zip(documents, metadatas, ids)):
                     formatted_results.append({
                         "id": id_val,
                         "title": metadata.get('title', 'No Title'),
