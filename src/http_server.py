@@ -12,9 +12,8 @@ mcp_server = None
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # スタートアップ処理
-    global mcp_server
-    # MCPサーバーの初期化
-    mcp_server = ChromaDBMCPServer(config_path="config/config.yaml")
+    global mcp_server    # MCPサーバーの初期化
+    mcp_server = ChromaDBMCPServer()
     print("MCPサーバーを初期化しました")
     
     yield
@@ -37,10 +36,14 @@ async def capture_conversation(request: Request):
     
     # リクエストボディを取得
     body = await request.json()
-    
-    # MCPサーバーのツールを呼び出す
+      # MCPサーバーのツールを呼び出す
     try:
-        result = await mcp_server.tools["capture_conversation"](body, {})
+        # サーバーオブジェクト経由でツールにアクセス
+        tools = getattr(mcp_server.server, 'tools', {})
+        if "capture_conversation" in tools:
+            result = await tools["capture_conversation"](body, {})
+        else:
+            raise Exception("capture_conversation ツールが見つかりません")
         return result
     except Exception as e:
         logging.error(f"会話キャプチャエラー: {e}")
@@ -51,10 +54,14 @@ async def search_knowledge(query: str, limit: int = 5):
     """知識検索を実行"""
     if not mcp_server:
         raise HTTPException(status_code=500, detail="サーバーが初期化されていません")
-    
-    # MCPサーバーのツールを呼び出す
+      # MCPサーバーのツールを呼び出す
     try:
-        result = await mcp_server.tools["search_knowledge"]({"query": query, "limit": limit}, {})
+        # サーバーオブジェクト経由でツールにアクセス
+        tools = getattr(mcp_server.server, 'tools', {})
+        if "search_knowledge" in tools:
+            result = await tools["search_knowledge"]({"query": query, "limit": limit}, {})
+        else:
+            raise Exception("search_knowledge ツールが見つかりません")
         return result
     except Exception as e:
         logging.error(f"検索エラー: {e}")

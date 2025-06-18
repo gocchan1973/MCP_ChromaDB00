@@ -82,7 +82,7 @@ logger = logging.getLogger(__name__)
 class ChromaDBManager:
     """ChromaDBマネージャークラス"""
     
-    def __init__(self, persist_directory: str = None):
+    def __init__(self, persist_directory: Optional[str] = None):
         # 確実な設定管理（推測処理除去）
         if persist_directory:
             self.persist_directory = persist_directory
@@ -102,8 +102,7 @@ class ChromaDBManager:
                         config_file_dir = Path(__file__).parent / "config"
                         abs_path = config_file_dir.parent / config_path
                         self.persist_directory = str(abs_path)
-                else:
-                    # 3. 明示的なデフォルト（推測なし）
+                else:                    # 3. 明示的なデフォルト（推測なし）
                     default_path = Path(__file__).parent.parent.parent / "IrukaWorkspace" / "shared__ChromaDB_"
                     self.persist_directory = str(default_path)
                     print(f"設定管理: デフォルトパスを使用 - {self.persist_directory}")
@@ -126,6 +125,9 @@ class ChromaDBManager:
     def list_collections(self):
         """コレクションリストを取得"""
         try:
+            if self.client is None:
+                logger.error("ChromaDB client is not initialized")
+                return []
             return self.client.list_collections()
         except Exception as e:
             logger.error(f"Failed to list collections: {e}")
@@ -134,6 +136,9 @@ class ChromaDBManager:
     def get_collection(self, collection_name: str):
         """コレクションを取得"""
         try:
+            if self.client is None:
+                logger.error("ChromaDB client is not initialized")
+                return None
             return self.client.get_collection(name=collection_name)
         except Exception as e:
             logger.error(f"Failed to get collection '{collection_name}': {e}")
@@ -142,6 +147,9 @@ class ChromaDBManager:
     def create_collection(self, collection_name: str):
         """コレクションを作成"""
         try:
+            if self.client is None:
+                logger.error("ChromaDB client is not initialized")
+                return None
             return self.client.create_collection(name=collection_name)
         except Exception as e:
             logger.error(f"Failed to create collection '{collection_name}': {e}")
@@ -215,9 +223,18 @@ class ChromaDBManager:
                     "chroma_health_check でシステム状態を確認してください"            ]
             }
     
-    def search(self, query: str, collection_name: str = None, n_results: int = 5) -> Dict[str, Any]:
+    def search(self, query: str, collection_name: Optional[str] = None, n_results: int = 5) -> Dict[str, Any]:
         """テキスト検索を実行"""
         try:
+            # ChromaDBクライアントの初期化チェック
+            if self.client is None:
+                return {
+                    "success": False,
+                    "error": "ChromaDB client is not initialized",
+                    "query": query,
+                    "collection": collection_name
+                }
+            
             # デフォルトコレクション名を設定
             if collection_name is None:
                 from utils.config_helper import get_default_collection
@@ -236,29 +253,42 @@ class ChromaDBManager:
                 n_results=n_results
             )
             
+                # Get documents with proper null handling
+            documents = results.get("documents", []) or []
+                
             return {
                 "success": True,
                 "results": {
-                    "documents": results.get("documents", []),
+                    "documents": documents,
                     "metadatas": results.get("metadatas", []),
-                    "ids": results.get("ids", []),                "distances": results.get("distances", [])
+                    "ids": results.get("ids", []),
+                    "distances": results.get("distances", [])
                 },
                 "query": query,
                 "collection": collection_name,
-                "count": len(results.get("documents", []))
+                "count": len(documents)
             }
             
         except Exception as e:
             return {
                 "success": False,
                 "error": str(e),
-                "query": query,                "collection": collection_name
+                "query": query,
+                "collection": collection_name
             }
-
-    def store_text(self, text: str, collection_name: str = None, metadata: Dict[str, Any] = None) -> Dict[str, Any]:
+    def store_text(self, text: str, collection_name: Optional[str] = None, metadata: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         """テキストを保存"""
         try:
             import uuid
+            
+            # ChromaDBクライアントの初期化チェック
+            if self.client is None:
+                return {
+                    "success": False,
+                    "error": "ChromaDB client is not initialized",
+                    "text_length": len(text) if text else 0,
+                    "collection": collection_name
+                }
             
             # デフォルトコレクション名を設定
             if collection_name is None:

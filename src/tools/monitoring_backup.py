@@ -188,7 +188,7 @@ def register_monitoring_tools(mcp: Any, db_manager: Any):
             client_info = {
                 "version": "ChromaDB Client",
                 "connected": True,
-                "database_path": str(db_manager.db_path),
+                "database_path": str(getattr(db_manager, 'persist_directory', 'Unknown')),
                 "collections_count": len(collections)
             }
               # ツール情報を取得

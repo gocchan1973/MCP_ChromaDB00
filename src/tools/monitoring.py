@@ -185,12 +185,11 @@ def register_monitoring_tools(mcp: Any, db_manager: Any):
         try:
             # クライアント情報を安全に取得
             collections = db_manager.client.list_collections()
-            
-            # 基本的なクライアント情報を構築
+              # 基本的なクライアント情報を構築
             client_info = {
                 "version": "ChromaDB Client",
                 "connected": True,
-                "database_path": str(db_manager.db_path),
+                "database_path": str(getattr(db_manager, 'persist_directory', 'Unknown')),
                 "collections_count": len(collections)
             }
             

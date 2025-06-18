@@ -27,15 +27,15 @@ sys.path.insert(0, str(current_dir))
 
 # グローバル設定をインポート
 try:
-    from utils.config_helper import get_default_collection, get_tool_name, migrate_tool_name
+    from src.utils.config_helper import get_default_collection, get_tool_name, migrate_tool_name
 except ImportError:
     # フォールバック
-    def get_default_collection():
+    def get_default_collection() -> str:
         return "sister_chat_history"
-    def get_tool_name(name):
-        return name
-    def migrate_tool_name(name):
-        return name[4:] if name.startswith("bb7_") else name
+    def get_tool_name(base_name: str) -> str:
+        return base_name
+    def migrate_tool_name(old_name: str) -> str:
+        return old_name[4:] if old_name.startswith("bb7_") else old_name
 
 # ログファイル設定（標準出力汚染防止）
 log_dir = Path(__file__).parent.parent / "logs"
@@ -170,7 +170,8 @@ if MCP_AVAILABLE:
                 description="Get MCP server statistics",
                 inputSchema={"type": "object", "properties": {}}
             )
-        ]    @app.call_tool()
+        ]
+    @app.call_tool()
     async def call_tool(name: str, arguments: dict):
         """ツールの実行"""
         # BB7プレフィックスの後方互換性サポート
@@ -213,13 +214,21 @@ if MCP_AVAILABLE:
         metadata = arguments.get("metadata", {})
         collection_name = arguments.get("collection_name", "sister_chat_history")
         
-        if not text:            return {
+        if not text:
+            return {
                 "success": False, 
                 "message": "Text is empty",
                 "usage_example": "store_text {\"text\": \"保存したい重要な情報\"}"
             }
         
         try:
+            # ChromaDBクライアントのNoneチェック
+            if not app.chroma_client:
+                return {
+                    "success": False,
+                    "message": "ChromaDB client is not initialized"
+                }
+                
             # コレクション取得または作成
             if collection_name not in app.collections:
                 try:
@@ -254,8 +263,7 @@ if MCP_AVAILABLE:
                 "text_length": len(text)
             }
             
-        except Exception as e:
-            return {
+        except Exception as e:            return {
                 "success": False, 
                 "message": f"Storage error: {str(e)}"
             }
@@ -273,6 +281,13 @@ if MCP_AVAILABLE:
             }
         
         try:
+            # ChromaDBクライアントのNoneチェック
+            if not app.chroma_client:
+                return {
+                    "success": False,
+                    "message": "ChromaDB client is not initialized"
+                }
+                
             if collection_name not in app.collections:
                 try:
                     app.collections[collection_name] = app.chroma_client.get_collection(collection_name)

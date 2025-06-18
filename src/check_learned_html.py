@@ -38,16 +38,19 @@ def check_learned_html():
         # いくつかのサンプルドキュメントを取得
         sample_docs = collection.get(
             limit=5,
-            include=["documents", "metadatas"]
-        )
+            include=["documents", "metadatas"]        )
         
         print(f"\n📄 サンプルドキュメント:")
-        for i, (doc, metadata) in enumerate(zip(sample_docs['documents'], sample_docs['metadatas'])):
-            print(f"\n--- ドキュメント {i+1} ---")
-            print(f"ID: {sample_docs['ids'][i]}")
-            print(f"タイプ: {metadata.get('content_type', 'unknown')}")
-            print(f"チャンク: {metadata.get('chunk_index', 'N/A')}/{metadata.get('total_chunks', 'N/A')}")
-            print(f"内容 (最初の200文字): {doc[:200]}...")
+        # Noneチェックを追加
+        if sample_docs['documents'] and sample_docs['metadatas']:
+            for i, (doc, metadata) in enumerate(zip(sample_docs['documents'], sample_docs['metadatas'])):
+                print(f"\n--- ドキュメント {i+1} ---")
+                print(f"ID: {sample_docs['ids'][i] if sample_docs['ids'] else 'N/A'}")
+                print(f"タイプ: {metadata.get('content_type', 'unknown') if metadata else 'unknown'}")
+                print(f"チャンク: {metadata.get('chunk_index', 'N/A') if metadata else 'N/A'}/{metadata.get('total_chunks', 'N/A') if metadata else 'N/A'}")
+                print(f"内容 (最初の200文字): {doc[:200] if doc else 'N/A'}...")
+        else:
+            print("サンプルドキュメントがありません")
         
         # 検索テスト
         print(f"\n🔍 検索テスト:")
@@ -63,29 +66,31 @@ def check_learned_html():
             results = collection.query(
                 query_texts=[query],
                 n_results=2,
-                include=["documents", "metadatas", "distances"]
-            )
+                include=["documents", "metadatas", "distances"]            )
             
             print(f"\n🔎 検索: '{query}'")
-            if results['documents'][0]:
+            # Noneチェックを追加
+            if results['documents'] and results['documents'][0]:
                 for j, (doc, metadata, distance) in enumerate(zip(
                     results['documents'][0], 
-                    results['metadatas'][0], 
-                    results['distances'][0]
+                    results['metadatas'][0] if results['metadatas'] else [], 
+                    results['distances'][0] if results['distances'] else []
                 )):
-                    print(f"  結果{j+1} (距離: {distance:.3f}): {doc[:150]}...")
+                    print(f"  結果{j+1} (距離: {distance:.3f}): {doc[:150] if doc else 'N/A'}...")
             else:
                 print(f"  結果なし")
-        
-        # メタデータ分析
+          # メタデータ分析
         all_docs = collection.get(
             include=["metadatas"]
         )
         
         content_types = {}
-        for metadata in all_docs['metadatas']:
-            content_type = metadata.get('content_type', 'unknown')
-            content_types[content_type] = content_types.get(content_type, 0) + 1
+        # Noneチェックを追加
+        if all_docs['metadatas']:
+            for metadata in all_docs['metadatas']:
+                if metadata:  # メタデータ自体もNoneチェック
+                    content_type = metadata.get('content_type', 'unknown')
+                    content_types[content_type] = content_types.get(content_type, 0) + 1
         
         print(f"\n📊 コンテンツタイプ別統計:")
         for content_type, count in content_types.items():

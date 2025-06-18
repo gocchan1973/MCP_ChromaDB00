@@ -8,6 +8,8 @@
 import chromadb
 from pathlib import Path
 import uuid
+from typing import List, Dict, Any
+from datetime import datetime
 from datetime import datetime
 
 def initialize_new_chromadb():
@@ -42,55 +44,66 @@ def initialize_new_chromadb():
         # 初期テストデータを追加
         timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
         
-        test_documents = [
-            "ChromaDB統一環境が正常に初期化されました。",
+        test_documents = [            "ChromaDB統一環境が正常に初期化されました。",
             "今後はこの単一コレクションですべてのナレッジを管理します。",
             "PDF学習、HTML学習、会話履歴すべてがここに保存されます。"
         ]
-        
+          # テストデータの型安全な定義
         test_metadatas = [
             {
                 "category": "system_init",
-                "source": "initialization_script",
+                "source": "initialization_script", 
                 "timestamp": timestamp,
                 "description": "ChromaDB初期化確認"
             },
             {
-                "category": "system_info", 
+                "category": "system_info",
                 "source": "initialization_script",
-                "timestamp": timestamp,
+                "timestamp": timestamp, 
                 "description": "コレクション統一方針"
             },
             {
                 "category": "system_info",
-                "source": "initialization_script", 
+                "source": "initialization_script",
                 "timestamp": timestamp,
                 "description": "学習データ管理方針"
             }
         ]
         
         test_ids = [f"init_{timestamp}_{i:03d}" for i in range(len(test_documents))]
-        
-        # テストデータを追加
-        collection.add(
-            documents=test_documents,
-            metadatas=test_metadatas,
-            ids=test_ids
-        )
-        
-        print(f"✅ テストデータ {len(test_documents)} 件を追加")
+          # テストデータを追加（型キャストで安全に処理）
+        try:
+            collection.add(
+                documents=test_documents,
+                metadatas=test_metadatas,  # type: ignore
+                ids=test_ids
+            )
+            print(f"✅ テストデータ {len(test_documents)} 件を追加")
+        except Exception as e:
+            print(f"❌ データ追加エラー: {e}")
+            return False
         
         # 動作確認
         count = collection.count()
-        print(f"📊 コレクション '{collection_name}': {count} ドキュメント")
-        
-        # 検索テスト
-        results = collection.query(
-            query_texts=["ChromaDB"],
-            n_results=2
-        )
-        
-        print(f"🔍 検索テスト: {len(results['documents'][0])} 件ヒット")
+        print(f"📊 コレクション '{collection_name}': {count} ドキュメント")        # 検索テスト
+        try:
+            results = collection.query(
+                query_texts=["ChromaDB"],
+                n_results=2
+            )
+            
+            # 検索結果の安全なアクセス
+            if results and 'documents' in results and results['documents']:
+                documents_list = results['documents']
+                if documents_list and len(documents_list) > 0 and documents_list[0]:
+                    hit_count = len(documents_list[0])
+                    print(f"🔍 検索テスト: {hit_count} 件ヒット")
+                else:
+                    print("🔍 検索テスト: 0 件ヒット")
+            else:
+                print("🔍 検索テスト: 0 件ヒット")
+        except Exception as e:
+            print(f"🔍 検索テスト: エラー発生 - {e}")
         
         # コレクション一覧確認
         all_collections = client.list_collections()

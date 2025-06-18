@@ -157,13 +157,17 @@ async def chroma_stats() -> dict:
     return stats_data
 
 @mcp.tool()
-async def chroma_store_text(text: str, metadata: dict = None, collection_name: str = "general_knowledge") -> dict:
+async def chroma_store_text(text: str, metadata: Optional[dict] = None, collection_name: str = "general_knowledge") -> dict:
     """テキストをChromaDBに保存"""
     if not chromadb_manager.initialized:
         await chromadb_manager.initialize()
     
     try:
         if collection_name not in chromadb_manager.collections:
+            # ChromaDBクライアントが初期化されているかチェック
+            if not chromadb_manager.chroma_client:
+                return {"success": False, "message": "ChromaDB client not initialized"}
+            
             # 新しいコレクションを作成
             chromadb_manager.collections[collection_name] = chromadb_manager.chroma_client.create_collection(
                 name=collection_name,
@@ -253,7 +257,7 @@ async def chroma_list_collections() -> dict:
         return {"success": False, "message": f"Error listing collections: {str(e)}"}
 
 @mcp.tool()
-async def chroma_create_collection(name: str, metadata: dict = None) -> dict:
+async def chroma_create_collection(name: str, metadata: Optional[dict] = None) -> dict:
     """コレクション作成"""
     if not chromadb_manager.initialized:
         await chromadb_manager.initialize()
@@ -354,13 +358,13 @@ async def chroma_get_collection(name: str) -> dict:
         return {"success": False, "message": f"Error getting collection: {str(e)}"}
 
 @mcp.tool()
-async def chroma_add_documents(collection_name: str, documents: list, metadatas: list = None, ids: list = None) -> dict:
+async def chroma_add_documents(collection_name: str, documents: list, metadatas: Optional[list] = None, ids: Optional[list] = None) -> dict:
     """ドキュメント追加"""
     if not chromadb_manager.initialized:
         await chromadb_manager.initialize()
     
     try:
-        if chromadb_manager.chroma_client:
+        if chromadb_manager.chroma_client is not None:
             try:
                 collection = chromadb_manager.chroma_client.get_collection(collection_name)
             except:
@@ -370,10 +374,26 @@ async def chroma_add_documents(collection_name: str, documents: list, metadatas:
             if not ids:
                 import uuid
                 ids = [str(uuid.uuid4()) for _ in documents]
-            
+              # metadatasの型を適切に処理
+            if metadatas is None:
+                processed_metadatas: list[dict[str, str | int | float | bool | None]] = [{}] * len(documents)
+            else:
+                # 各メタデータの値を適切な型に変換
+                processed_metadatas: list[dict[str, str | int | float | bool | None]] = []
+                for metadata in metadatas:
+                    if isinstance(metadata, dict):
+                        processed_metadata: dict[str, str | int | float | bool | None] = {}
+                        for key, value in metadata.items():
+                            if isinstance(value, (str, int, float, bool)) or value is None:
+                                processed_metadata[str(key)] = value
+                            else:
+                                processed_metadata[str(key)] = str(value)
+                        processed_metadatas.append(processed_metadata)
+                    else:
+                        processed_metadatas.append({})            
             collection.add(
                 documents=documents,
-                metadatas=metadatas or [{}] * len(documents),
+                metadatas=processed_metadatas if processed_metadatas else None,  # type: ignore
                 ids=ids
             )
             
@@ -396,7 +416,7 @@ async def chroma_get_documents(collection_name: str, limit: int = 100, offset: i
         await chromadb_manager.initialize()
     
     try:
-        if chromadb_manager.chroma_client:
+        if chromadb_manager.chroma_client is not None:
             try:
                 collection = chromadb_manager.chroma_client.get_collection(collection_name)
             except:
@@ -408,13 +428,14 @@ async def chroma_get_documents(collection_name: str, limit: int = 100, offset: i
                 offset=offset
             )
             
+            documents = results.get("documents", [])
             return {
                 "success": True,
                 "collection_name": collection_name,
-                "documents": results.get("documents", []),
+                "documents": documents,
                 "metadatas": results.get("metadatas", []),
                 "ids": results.get("ids", []),
-                "total_returned": len(results.get("documents", []))
+                "total_returned": len(documents) if documents is not None else 0
             }
         else:
             return {"success": False, "message": "ChromaDB client not initialized"}
@@ -423,13 +444,13 @@ async def chroma_get_documents(collection_name: str, limit: int = 100, offset: i
         return {"success": False, "message": f"Error getting documents: {str(e)}"}
 
 @mcp.tool()
-async def chroma_similarity_search(query_texts: list, collection_name: str = "general_knowledge", n_results: int = 5, where: dict = None) -> dict:
+async def chroma_similarity_search(query_texts: list, collection_name: str = "general_knowledge", n_results: int = 5, where: Optional[dict] = None) -> dict:
     """類似度検索"""
     if not chromadb_manager.initialized:
         await chromadb_manager.initialize()
     
     try:
-        if chromadb_manager.chroma_client:
+        if chromadb_manager.chroma_client is not None:
             try:
                 collection = chromadb_manager.chroma_client.get_collection(collection_name)
             except:
@@ -459,13 +480,16 @@ async def chroma_similarity_search(query_texts: list, collection_name: str = "ge
         return {"success": False, "message": f"Error in similarity search: {str(e)}"}
 
 @mcp.tool()
-async def chroma_conversation_capture(conversation: list, context: dict = None, collection_name: str = "development_conversations") -> dict:
+async def chroma_conversation_capture(conversation: list, context: Optional[dict] = None, collection_name: str = "development_conversations") -> dict:
     """会話キャプチャ（コレクション指定可能）"""
     if not chromadb_manager.initialized:
         await chromadb_manager.initialize()
     
     try:
-          # コレクション取得または作成
+        # コレクション取得または作成
+        if not chromadb_manager.chroma_client:
+            return {"success": False, "message": "ChromaDB client not initialized"}
+            
         try:
             collection = chromadb_manager.chroma_client.get_collection(collection_name)
         except:
@@ -476,7 +500,7 @@ async def chroma_conversation_capture(conversation: list, context: dict = None, 
                 description = "Development conversation history"
                 
             collection = chromadb_manager.chroma_client.create_collection(
-                collection_name,
+                name=collection_name,
                 metadata={"description": description}
             )
             chromadb_manager.collections[collection_name] = collection
@@ -556,11 +580,14 @@ async def chroma_import_data(file_path: str, collection_name: str, format: str =
         
         if not os.path.exists(file_path):
             return {"success": False, "message": f"File not found: {file_path}"}
-        
-        # コレクション取得または作成
+          # コレクション取得または作成
         try:
+            if not chromadb_manager.chroma_client:
+                return {"success": False, "message": "ChromaDB client not initialized"}
             collection = chromadb_manager.chroma_client.get_collection(collection_name)
-        except:
+        except Exception:
+            if not chromadb_manager.chroma_client:
+                return {"success": False, "message": "ChromaDB client not initialized"}
             collection = chromadb_manager.chroma_client.create_collection(collection_name)
             chromadb_manager.collections[collection_name] = collection
         
@@ -605,13 +632,13 @@ async def chroma_import_data(file_path: str, collection_name: str, format: str =
         return {"success": False, "message": f"Error importing data: {str(e)}"}
 
 @mcp.tool()
-async def chroma_export_data(collection_name: str, output_format: str = "json", file_path: str = None) -> dict:
+async def chroma_export_data(collection_name: str, output_format: str = "json", file_path: Optional[str] = None) -> dict:
     """データエクスポート"""
     if not chromadb_manager.initialized:
         await chromadb_manager.initialize()
     
     try:
-        if chromadb_manager.chroma_client:
+        if chromadb_manager.chroma_client is not None:
             try:
                 collection = chromadb_manager.chroma_client.get_collection(collection_name)
             except:
@@ -624,16 +651,25 @@ async def chroma_export_data(collection_name: str, output_format: str = "json", 
                 import json
                 from datetime import datetime
                 
+                documents = results.get("documents") or []
                 export_data = {
                     "collection_name": collection_name,
                     "export_timestamp": datetime.now().isoformat(),
-                    "document_count": len(results.get("documents", [])),
+                    "document_count": len(documents),
                     "documents": []
                 }
                 
                 documents = results.get("documents", [])
                 metadatas = results.get("metadatas", [])
                 ids = results.get("ids", [])
+                
+                # Handle potential None values
+                if documents is None:
+                    documents = []
+                if metadatas is None:
+                    metadatas = []
+                if ids is None:
+                    ids = []
                 
                 for i in range(len(documents)):
                     export_data["documents"].append({
@@ -685,16 +721,17 @@ async def chroma_search_with_metadata_filter(collection_name: str, where: dict, 
                 limit=limit
             )
             
+            documents = results.get("documents", []) or []
             return {
                 "success": True,
                 "collection_name": collection_name,
                 "filter": where,
                 "results": {
-                    "documents": results.get("documents", []),
+                    "documents": documents,
                     "metadatas": results.get("metadatas", []),
                     "ids": results.get("ids", [])
                 },
-                "result_count": len(results.get("documents", []))
+                "result_count": len(documents)
             }
         else:
             return {"success": False, "message": "ChromaDB client not initialized"}
@@ -717,16 +754,17 @@ async def chroma_get_document_by_id(collection_name: str, ids: list) -> dict:
             
             results = collection.get(ids=ids)
             
+            documents = results.get("documents", []) or []
             return {
                 "success": True,
                 "collection_name": collection_name,
                 "requested_ids": ids,
                 "results": {
-                    "documents": results.get("documents", []),
+                    "documents": documents,
                     "metadatas": results.get("metadatas", []),
                     "ids": results.get("ids", [])
                 },
-                "found_count": len(results.get("documents", []))
+                "found_count": len(documents)
             }
         else:
             return {"success": False, "message": "ChromaDB client not initialized"}
@@ -735,7 +773,7 @@ async def chroma_get_document_by_id(collection_name: str, ids: list) -> dict:
         return {"success": False, "message": f"Error getting documents by ID: {str(e)}"}
 
 @mcp.tool()
-async def chroma_update_documents(collection_name: str, ids: list, documents: list = None, metadatas: list = None) -> dict:
+async def chroma_update_documents(collection_name: str, ids: list, documents: Optional[list] = None, metadatas: Optional[list] = None) -> dict:
     """ドキュメント更新"""
     if not chromadb_manager.initialized:
         await chromadb_manager.initialize()
@@ -768,7 +806,7 @@ async def chroma_update_documents(collection_name: str, ids: list, documents: li
         return {"success": False, "message": f"Error updating documents: {str(e)}"}
 
 @mcp.tool()
-async def chroma_delete_documents(collection_name: str, ids: list = None, where: dict = None) -> dict:
+async def chroma_delete_documents(collection_name: str, ids: Optional[list] = None, where: Optional[dict] = None) -> dict:
     """ドキュメント削除"""
     if not chromadb_manager.initialized:
         await chromadb_manager.initialize()
