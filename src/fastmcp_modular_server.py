@@ -64,6 +64,7 @@ try:
     from tools.pdf_learning import register_pdf_learning_tools
     from tools.html_learning import register_html_learning_tools
     from tools.data_integrity_management import register_data_integrity_tools
+    from tools.db_lifecycle_management import register_db_lifecycle_tools
 except ImportError as e:
     print(f"ツールモジュールのインポートエラー: {e}")
     print(f"現在のパス: {sys.path}")
@@ -370,8 +371,7 @@ def register_all_tools():
         logger.info("✅ Collection inspection tools registered")
         
         register_collection_confirmation_tools(mcp, db_manager)
-        logger.info("✅ Collection confirmation tools registered")
-        
+        logger.info("✅ Collection confirmation tools registered")        
         register_pdf_learning_tools(mcp, db_manager)
         logger.info("✅ PDF learning tools registered")
         
@@ -383,6 +383,14 @@ def register_all_tools():
             logger.info("✅ Data integrity & quality management tools registered")
         except Exception as e:
             logger.error(f"❌ Failed to register data integrity tools: {e}")
+            import traceback
+            logger.error(f"Detailed error: {traceback.format_exc()}")
+        
+        try:
+            register_db_lifecycle_tools(mcp, db_manager)
+            logger.info("✅ DB lifecycle management tools registered (謝罪版)")
+        except Exception as e:
+            logger.error(f"❌ Failed to register DB lifecycle tools: {e}")
             import traceback
             logger.error(f"Detailed error: {traceback.format_exc()}")
         
