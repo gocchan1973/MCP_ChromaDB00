@@ -1,0 +1,88 @@
+name: 🐛 Bug Report
+description: バグや問題を報告
+title: "[BUG] "
+labels: ["bug", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ChromaDB MCP Serverでバグを発見していただき、ありがとうございます！
+        以下の情報を提供していただけると、迅速に対応できます。
+
+  - type: textarea
+    id: bug-description
+    attributes:
+      label: 🐛 バグの概要
+      description: 発生している問題を簡潔に説明してください
+      placeholder: ChromaDBが...のときに...が発生します
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction-steps
+    attributes:
+      label: 🔄 再現手順
+      description: バグを再現するための手順を教えてください
+      placeholder: |
+        1. ...を実行
+        2. ...をクリック
+        3. エラーが発生
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected-behavior
+    attributes:
+      label: ✅ 期待される動作
+      description: 本来どのような動作をするべきか教えてください
+      placeholder: ...になるはずです
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual-behavior
+    attributes:
+      label: ❌ 実際の動作
+      description: 実際にはどのような動作をしたか教えてください
+      placeholder: ...になりました
+    validations:
+      required: true
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: 🖥️ 環境情報
+      description: 実行環境の情報を教えてください
+      placeholder: |
+        - OS: Windows 11
+        - Python: 3.10
+        - ChromaDB: 0.4.x
+        - MCP: 1.0.x
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: 📋 ログ・エラーメッセージ
+      description: 関連するログやエラーメッセージがあれば貼り付けてください
+      placeholder: エラーログをここに貼り付けてください
+      render: shell
+
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: 📎 追加情報
+      description: その他、問題解決に役立ちそうな情報があれば教えてください
+      placeholder: スクリーンショット、関連する設定など
+
+  - type: checkboxes
+    id: chromadb-health
+    attributes:
+      label: 🩺 ChromaDB君の健康状態（該当するものをチェック）
+      options:
+        - label: 多重プロセス起動が発生している
+        - label: メモリ使用量が異常に多い
+        - label: 接続エラーが頻発している
+        - label: レスポンスが遅い
+        - label: データの整合性に問題がある
