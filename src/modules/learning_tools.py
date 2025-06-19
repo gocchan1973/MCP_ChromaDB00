@@ -36,7 +36,7 @@ def register_learning_tools(mcp, manager):
         """
         try:
             if not manager.initialized:
-                manager.safe_initialize()
+                manager.initialize()
             
             if collection_name is None:
                 collection_name = manager.config_manager.config.get('default_collection', 'general_knowledge')
@@ -206,7 +206,7 @@ def register_learning_tools(mcp, manager):
         Returns: キャプチャ結果        """
         try:
             if not manager.initialized:
-                manager.safe_initialize()            # グローバル設定からデフォルトコレクション名を取得
+                manager.initialize()            # グローバル設定からデフォルトコレクション名を取得
             global_settings = GlobalSettings()
             collection_name = str(global_settings.get_setting("default_collection.name", "sister_chat_history_v4"))
             
@@ -333,7 +333,7 @@ def register_learning_tools(mcp, manager):
         """
         try:
             if not manager.initialized:
-                manager.safe_initialize()
+                manager.initialize()
             
             from datetime import datetime, timedelta
             start_date = datetime.now() - timedelta(days=days)            # 履歴検索（簡易実装）
