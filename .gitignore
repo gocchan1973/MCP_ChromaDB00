@@ -71,3 +71,6 @@ IrukaWorkspace/
 
 # Wikiコンテンツ（ローカル管理、GitHubには不要）
 wiki/
+
+# テストフォルダ（ローカル開発用、リポジトリには不要）
+tests/
