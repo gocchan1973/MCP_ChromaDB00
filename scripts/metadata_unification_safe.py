@@ -60,6 +60,9 @@ class SafeMetadataUnifier:
     def get_collection(self, collection_name: str) -> bool:
         """コレクション取得"""
         try:
+            if self.client is None:
+                print("✗ クライアントが初期化されていません")
+                return False
             self.collection = self.client.get_collection(collection_name)
             count = self.collection.count()
             print(f"✓ コレクション取得: {collection_name} ({count}件)")
@@ -68,7 +71,7 @@ class SafeMetadataUnifier:
             print(f"✗ コレクション取得失敗: {e}")
             return False
     
-    def create_backup(self, collection_name: str) -> str:
+    def create_backup(self, collection_name: str) -> Optional[str]:
         """セーフティバックアップ"""
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         backup_file = f"metadata_unify_backup_{timestamp}.json"
@@ -76,6 +79,9 @@ class SafeMetadataUnifier:
         
         try:
             # 安全なデータ取得
+            if self.collection is None:
+                print("✗ コレクションが初期化されていません")
+                return None
             result = self.collection.get(include=['documents', 'metadatas'])
             documents = result.get('documents', [])
             metadatas = result.get('metadatas', [])
@@ -84,7 +90,7 @@ class SafeMetadataUnifier:
                 "backup_info": {
                     "collection_name": collection_name,
                     "timestamp": timestamp,
-                    "document_count": len(documents),
+                    "document_count": len(documents or []),
                     "schema_version": "v2.1"
                 },
                 "data": {
@@ -109,6 +115,8 @@ class SafeMetadataUnifier:
     def analyze_metadata(self) -> Dict[str, Any]:
         """メタデータ分析"""
         try:
+            if self.collection is None:
+                return {"error": "コレクションが初期化されていません"}
             result = self.collection.get(include=['metadatas'])
             metadatas = result.get('metadatas', [])
             
@@ -204,16 +212,18 @@ class SafeMetadataUnifier:
         print("🧪 ドライラン開始...")
         
         try:
+            if self.collection is None:
+                return {"error": "コレクションが初期化されていません"}
             result = self.collection.get(include=['documents', 'metadatas'])
-            documents = result.get('documents', [])
-            metadatas = result.get('metadatas', [])
+            documents = result.get('documents', []) or []
+            metadatas = result.get('metadatas', []) or []
             
             changes = 0
             errors = 0
             
             for i, (doc, old_meta) in enumerate(zip(documents, metadatas)):
                 try:
-                    unified_meta = self.unify_single_metadata(old_meta or {}, doc or "", i)
+                    unified_meta = self.unify_single_metadata(dict(old_meta) if old_meta else {}, doc or "", i)
                     
                     # 変更チェック
                     if old_meta != unified_meta:
@@ -245,9 +255,11 @@ class SafeMetadataUnifier:
         print("🔄 メタデータ統一化実行...")
         
         try:
+            if self.collection is None:
+                return {"error": "コレクションが初期化されていません"}
             result = self.collection.get(include=['documents', 'metadatas'])
-            documents = result.get('documents', [])
-            metadatas = result.get('metadatas', [])
+            documents = result.get('documents', []) or []
+            metadatas = result.get('metadatas', []) or []
             
             processed = 0
             updated = 0
@@ -258,7 +270,7 @@ class SafeMetadataUnifier:
             
             for i, (doc, old_meta) in enumerate(zip(documents, metadatas)):
                 try:
-                    unified_meta = self.unify_single_metadata(old_meta or {}, doc or "", i)
+                    unified_meta = self.unify_single_metadata(dict(old_meta) if old_meta else {}, doc or "", i)
                     update_metadatas.append(unified_meta)
                     
                     if old_meta != unified_meta:
@@ -317,8 +329,10 @@ class SafeMetadataUnifier:
         print("🔍 結果検証中...")
         
         try:
+            if self.collection is None:
+                return {"error": "コレクションが初期化されていません"}
             result = self.collection.get(include=['metadatas'])
-            metadatas = result.get('metadatas', [])
+            metadatas = result.get('metadatas', []) or []
             
             # 必須フィールドチェック
             field_completeness = {}

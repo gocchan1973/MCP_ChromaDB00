@@ -101,6 +101,9 @@ class MetadataUnificationSystem:
     def get_collection(self, collection_name: str):
         """コレクション取得"""
         try:
+            if self.client is None:
+                print("✗ ChromaDBクライアントが初期化されていません")
+                return False
             self.collection = self.client.get_collection(collection_name)
             print(f"✓ コレクション取得: {collection_name} ({self.collection.count()}件)")
             return True
@@ -115,13 +118,16 @@ class MetadataUnificationSystem:
         self.backup_file = Path(self.chromadb_path).parent / "scripts" / backup_filename
         try:
             # 全データ取得
+            if self.collection is None:
+                print("✗ コレクションが初期化されていません")
+                return ""
             all_data = self.collection.get(include=['documents', 'metadatas'])
             
             backup_data = {
                 "backup_info": {
                     "collection_name": collection_name,
                     "timestamp": timestamp,
-                    "document_count": len(all_data.get('documents', [])),
+                    "document_count": len(all_data.get('documents') or []),
                     "schema_version": "v2.0"
                 },
                 "documents": all_data.get('documents', []),
@@ -137,12 +143,15 @@ class MetadataUnificationSystem:
             
         except Exception as e:
             print(f"✗ バックアップ作成失敗: {e}")
-            return None
+            return ""
     def analyze_current_metadata(self) -> Dict[str, Any]:
         """現在のメタデータ分析"""
         try:
+            if self.collection is None:
+                print("✗ コレクションが初期化されていません")
+                return {}
             all_data = self.collection.get(include=['metadatas'])
-            metadatas = all_data['metadatas']
+            metadatas = all_data.get('metadatas') or []
             
             # フィールド使用状況分析
             field_usage = {}
@@ -291,20 +300,22 @@ class MetadataUnificationSystem:
         
         try:
             # 全データ取得
-            all_data = self.collection.get(include=['documents', 'metadatas', 'ids'])
+            if self.collection is None:
+                print("✗ コレクションが初期化されていません")
+                return {"error": "collection is not initialized"}
+            all_data = self.collection.get(include=['documents', 'metadatas'])
             
             processed = 0
             errors = 0
             changes = 0
             
-            for i, (doc_id, content, old_metadata) in enumerate(zip(
-                all_data['ids'], 
-                all_data['documents'], 
-                all_data['metadatas']
-            )):
+            ids = all_data.get('ids') or []
+            documents = all_data.get('documents') or []
+            metadatas = all_data.get('metadatas') or []
+            for i, (doc_id, content, old_metadata) in enumerate(zip(ids, documents, metadatas)):
                 try:
                     # 統一メタデータ生成
-                    unified_metadata = self.unify_metadata(old_metadata or {}, content or "", doc_id)
+                    unified_metadata = self.unify_metadata(dict(old_metadata) if old_metadata else {}, content or "", doc_id)
                     
                     # 変更チェック
                     if old_metadata != unified_metadata:
@@ -354,8 +365,11 @@ class MetadataUnificationSystem:
             analysis = self.analyze_current_metadata()
             
             # 必須フィールドの確認
+            if self.collection is None:
+                print("✗ コレクションが初期化されていません")
+                return {"error": "collection is not initialized"}
             all_data = self.collection.get(include=['metadatas'])
-            metadatas = all_data['metadatas']
+            metadatas = all_data.get('metadatas') or []
             
             required_fields = self.unified_schema["required_fields"].keys()
             field_completeness = {}

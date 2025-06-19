@@ -13,9 +13,8 @@ from config.global_settings import GlobalSettings
 
 def register_learning_tools(mcp, manager):
     """学習・インポート関連ツールを登録"""
-    
-    @mcp.tool()
-    def chroma_store_html(
+
+    def _chroma_store_html_impl(
         html_path: str,
         collection_name: Optional[str] = None,
         chunk_size: int = 1000,
@@ -24,22 +23,17 @@ def register_learning_tools(mcp, manager):
         include_related_files: bool = True
     ) -> Dict[str, Any]:
         """
-        HTMLファイルとその関連ファイルをChromaDBに学習させる
-        Args:
-            html_path: HTMLファイルのパス
-            collection_name: 保存先コレクション（None=デフォルト使用）
-            chunk_size: テキストチャンクサイズ
-            overlap: チャンク間のオーバーラップ
-            project: プロジェクト名（メタデータ用）
-            include_related_files: 関連ファイルも含めるかどうか
-        Returns: 学習結果
+        HTMLファイルとその関連ファイルをChromaDBに学習させる（内部実装）
         """
         try:
             if not manager.initialized:
                 manager.initialize()
-            
+
             if collection_name is None:
-                collection_name = manager.config_manager.config.get('default_collection', 'general_knowledge')
+                # デフォルトコレクション名をグローバル設定から取得 (フォールバック値を削除)
+                collection_name = manager.config_manager.config.get('default_collection')
+                if not collection_name:
+                     return {"success": False, "error": "Default collection name not configured."}
             
             if not os.path.exists(html_path):
                 return {"success": False, "error": "HTML file not found"}
@@ -104,7 +98,28 @@ def register_learning_tools(mcp, manager):
             
         except Exception as e:
             return {"success": False, "error": str(e)}
-    
+
+    @mcp.tool()
+    def chroma_store_html(
+        html_path: str,
+        collection_name: Optional[str] = None,
+        chunk_size: int = 1000,
+        overlap: int = 200,
+        project: Optional[str] = None,
+        include_related_files: bool = True
+    ) -> Dict[str, Any]:
+        """
+        HTMLファイルとその関連ファイルをChromaDBに学習させる
+        """
+        return _chroma_store_html_impl(
+            html_path=html_path,
+            collection_name=collection_name,
+            chunk_size=chunk_size,
+            overlap=overlap,
+            project=project,
+            include_related_files=include_related_files
+        )
+
     @mcp.tool()
     def chroma_store_html_folder(
         folder_path: str,
@@ -152,7 +167,7 @@ def register_learning_tools(mcp, manager):
             
             for html_file in html_files:
                 try:
-                    result = chroma_store_html(
+                    result = _chroma_store_html_impl(
                         html_path=html_file,
                         collection_name=collection_name,
                         chunk_size=chunk_size,
@@ -206,10 +221,13 @@ def register_learning_tools(mcp, manager):
         Returns: キャプチャ結果        """
         try:
             if not manager.initialized:
-                manager.initialize()            # グローバル設定からデフォルトコレクション名を取得
+                manager.initialize()
+            # グローバル設定からデフォルトコレクション名を取得 (フォールバック値を削除)
             global_settings = GlobalSettings()
-            collection_name = str(global_settings.get_setting("default_collection.name", "sister_chat_history_v4"))
-            
+            collection_name = str(global_settings.get_setting("default_collection.name"))
+            if not collection_name or collection_name == "None": # get_settingがNoneを返す可能性とstr(None)になる場合を考慮
+                 return {"success": False, "error": "Default conversation collection name not configured."}
+
             if show_target_collection:
                 print(f"Target collection: {collection_name}")
             

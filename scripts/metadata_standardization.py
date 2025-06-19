@@ -67,7 +67,7 @@ class MetadataStandardizer:
         field_stats = {}
         content_type_analysis = {}
         
-        for i, metadata in enumerate(all_docs['metadatas']):
+        for i, metadata in enumerate(all_docs.get('metadatas') or []):
             if metadata:
                 for field, value in metadata.items():
                     if field not in field_stats:
@@ -82,7 +82,9 @@ class MetadataStandardizer:
                         field_stats[field]['samples'].append(str(value)[:50])
                 
                 # コンテンツタイプの推定
-                content_type = self._infer_content_type(metadata, all_docs['documents'][i])
+                documents = all_docs.get('documents')
+                document_content = documents[i] if documents is not None and documents[i] is not None else ""
+                content_type = self._infer_content_type(dict(metadata), document_content)
                 if content_type not in content_type_analysis:
                     content_type_analysis[content_type] = 0
                 content_type_analysis[content_type] += 1
@@ -193,15 +195,16 @@ class MetadataStandardizer:
         
         updated_metadatas = []
         
-        for i, (doc_id, metadata, content) in enumerate(zip(
-            all_docs['ids'], all_docs['metadatas'], all_docs['documents']
-        )):
+        ids = list(all_docs.get('ids', []))
+        metadatas = list(all_docs.get('metadatas') or [])
+        documents = list(all_docs.get('documents') or [])
+        for i, (doc_id, metadata, content) in enumerate(zip(ids, metadatas, documents)):
             try:
                 if metadata is None:
                     metadata = {}
                     
                 # 標準化されたメタデータを作成
-                standardized_metadata = self.create_standardized_metadata(metadata, content, doc_id)
+                standardized_metadata = self.create_standardized_metadata(dict(metadata), content, doc_id)
                 updated_metadatas.append(standardized_metadata)
                 
                 # 変更点の記録
@@ -254,7 +257,7 @@ class MetadataStandardizer:
             'overall_score': 0.0
         }
         
-        for doc_id, metadata in zip(all_docs['ids'], all_docs['metadatas']):
+        for doc_id, metadata in zip(all_docs['ids'], all_docs.get('metadatas') or []):
             if metadata is None:
                 continue
                 

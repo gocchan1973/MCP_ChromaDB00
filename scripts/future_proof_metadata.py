@@ -289,7 +289,7 @@ class FutureProofMetadataManager:
         return enhanced
 
     def create_unified_metadata(self, content: str, original_metadata: Dict, 
-                              document_id: str = None) -> Dict[str, Any]:
+                              document_id: Optional[str] = None) -> Dict[str, Any]:
         """統一メタデータを作成"""
         
         if document_id is None:
@@ -462,7 +462,11 @@ class FutureProofMetadataManager:
         print(f"🚀 統一メタデータ形式への移行開始 (dry_run={dry_run})")
         
         all_docs = self.collection.get()
-        total_docs = len(all_docs['ids'])
+        # Ensure all values are lists to avoid iteration errors
+        ids = all_docs.get('ids') or []
+        metadatas = all_docs.get('metadatas') or []
+        documents = all_docs.get('documents') or []
+        total_docs = len(ids)
         
         migration_report = {
             'total_documents': total_docs,
@@ -479,7 +483,7 @@ class FutureProofMetadataManager:
         print(f"📊 処理対象: {total_docs} ドキュメント")
         
         for i, (doc_id, metadata, content) in enumerate(zip(
-            all_docs['ids'], all_docs['metadatas'], all_docs['documents']
+            ids, metadatas, documents
         )):
             try:
                 if metadata is None:
@@ -492,7 +496,7 @@ class FutureProofMetadataManager:
                     continue
                 
                 # 統一メタデータを作成
-                unified_metadata = self.create_unified_metadata(content, metadata, doc_id)
+                unified_metadata = self.create_unified_metadata(content, dict(metadata), doc_id)
                 new_metadatas.append(unified_metadata)
                 
                 # 重複チェック
@@ -578,7 +582,7 @@ class FutureProofMetadataManager:
         content_lengths = []
         content_hashes = set()
         
-        for metadata in all_docs['metadatas']:
+        for metadata in (all_docs.get('metadatas') or []):
             if not metadata:
                 continue
             
@@ -588,11 +592,18 @@ class FutureProofMetadataManager:
             
             # 品質統計
             quality = metadata.get('quality_score', 0.0)
-            quality_scores.append(quality)
+            try:
+                if quality is None:
+                    quality_val = 0.0
+                else:
+                    quality_val = float(quality)
+            except (TypeError, ValueError):
+                quality_val = 0.0
+            quality_scores.append(quality_val)
             
-            if quality >= 0.8:
+            if quality_val >= 0.8:
                 health_report['quality_stats']['high_quality_docs'] += 1
-            elif quality >= 0.5:
+            elif quality_val >= 0.5:
                 health_report['quality_stats']['medium_quality_docs'] += 1
             else:
                 health_report['quality_stats']['low_quality_docs'] += 1

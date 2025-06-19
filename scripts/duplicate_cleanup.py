@@ -12,6 +12,10 @@ from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Any, Optional, Tuple
 from collections import defaultdict
+import argparse
+
+# グローバル設定のインポート
+from src.config.global_settings import GlobalSettings
 
 # ChromaDB インポート
 try:
@@ -29,7 +33,7 @@ class DuplicateCleanupSystem:
         self.chromadb_path = Path(chromadb_path)
         self.client = None
         self.collection = None
-        
+    
     def initialize(self) -> bool:
         """初期化"""
         try:
@@ -46,6 +50,9 @@ class DuplicateCleanupSystem:
     def get_collection(self, collection_name: str) -> bool:
         """コレクション取得"""
         try:
+            if self.client is None:
+                print("✗ クライアントが初期化されていません")
+                return False
             self.collection = self.client.get_collection(collection_name)
             count = self.collection.count()
             print(f"✓ コレクション取得: {collection_name} ({count}件)")
@@ -54,13 +61,16 @@ class DuplicateCleanupSystem:
             print(f"✗ コレクション取得失敗: {e}")
             return False
     
-    def create_backup(self, collection_name: str) -> str:
+    def create_backup(self, collection_name: str) -> Optional[str]:
         """重複削除前バックアップ"""
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         backup_file = f"duplicate_cleanup_backup_{timestamp}.json"
         backup_path = Path(self.chromadb_path).parent / "scripts" / backup_file
         
         try:
+            if self.collection is None:
+                print("✗ コレクションが初期化されていません")
+                return None
             result = self.collection.get(include=['documents', 'metadatas'])
             documents = result.get('documents', [])
             metadatas = result.get('metadatas', [])
@@ -69,7 +79,7 @@ class DuplicateCleanupSystem:
                 "backup_info": {
                     "collection_name": collection_name,
                     "timestamp": timestamp,
-                    "document_count": len(documents),
+                    "document_count": len(documents or []),
                     "operation": "duplicate_cleanup"
                 },
                 "data": {
@@ -95,9 +105,17 @@ class DuplicateCleanupSystem:
         print("🔍 重複検出開始...")
         
         try:
+            if self.collection is None:
+                print("✗ コレクションが初期化されていません")
+                return {"error": "コレクションが初期化されていません"}
             result = self.collection.get(include=['documents', 'metadatas'])
             documents = result.get('documents', [])
             metadatas = result.get('metadatas', [])
+            # Ensure both are lists for safe iteration
+            if not isinstance(documents, list):
+                documents = list(documents) if documents is not None else []
+            if not isinstance(metadatas, list):
+                metadatas = list(metadatas) if metadatas is not None else []
             
             # コンテンツハッシュで重複検出
             content_groups = defaultdict(list)
@@ -157,9 +175,17 @@ class DuplicateCleanupSystem:
                 return {"processed": 0, "removed": 0, "kept": 0}
             
             # 全データ取得（IDも含む）
+            if self.collection is None:
+                print("✗ コレクションが初期化されていません")
+                return {"error": "コレクションが初期化されていません"}
             result = self.collection.get(include=['documents', 'metadatas'])
             documents = result.get('documents', [])
             metadatas = result.get('metadatas', [])
+            # Ensure both are lists for safe iteration
+            if not isinstance(documents, list):
+                documents = list(documents) if documents is not None else []
+            if not isinstance(metadatas, list):
+                metadatas = list(metadatas) if metadatas is not None else []
             
             # 新しいIDを生成（doc_000001形式）
             ids_to_remove = []
@@ -197,10 +223,15 @@ class DuplicateCleanupSystem:
                 
                 # 元のコレクションを削除
                 collection_name = self.collection.name
-                self.client.delete_collection(collection_name)
+                if self.client is not None:
+                    self.client.delete_collection(name=collection_name)
                 
                 # 新しいコレクションを作成
-                self.collection = self.client.create_collection(collection_name)
+                if self.client is not None:
+                    self.collection = self.client.create_collection(collection_name)
+                else:
+                    print("✗ クライアントが初期化されていません（コレクション作成時）")
+                    return {"error": "クライアントが初期化されていません（コレクション作成時）"}
                 
                 # 重複除去後のデータを追加
                 if docs_to_keep:
@@ -262,28 +293,39 @@ class DuplicateCleanupSystem:
             return {"error": str(e)}
 
 def main():
-    """メイン関数"""
     print("🧹 ChromaDB 重複削除システム 起動")
     print("=" * 50)
-    
-    # 設定
-    collection_name = "mcp_production_knowledge"
-    chromadb_path = r"F:\副業\VSC_WorkSpace\IrukaWorkspace\shared__ChromaDB_"
-    
+
+    # グローバル設定インスタンス
+    global_settings = GlobalSettings()
+    # 設定ファイルが存在すれば読み込み
+    if global_settings._config_file.exists():
+        global_settings.load_from_file()
+
+    # コマンドライン引数
+    parser = argparse.ArgumentParser(description="ChromaDB 重複削除ツール")
+    parser.add_argument('--collection', type=str, default=None, help="対象コレクション名")
+    parser.add_argument('--db-path', type=str, default=None, help="ChromaDBのパス")
+    args = parser.parse_args()
+
+    # 優先順位: 引数 > グローバル設定 > ハードコーディング
+    collection_name = args.collection or global_settings.get_default_collection() or "sister_chat_history_v4"
+    chromadb_path = args.db_path or global_settings.get_database_path() or r"F:/副業/VSC_WorkSpace/IrukaWorkspace/shared__ChromaDB_"
+
     # パス確認
     if not Path(chromadb_path).exists():
         print(f"✗ ChromaDBパスが存在しません: {chromadb_path}")
         sys.exit(1)
-    
+
     # システム初期化
     cleanup_system = DuplicateCleanupSystem(chromadb_path)
-    
+
     if not cleanup_system.initialize():
         sys.exit(1)
-    
+
     if not cleanup_system.get_collection(collection_name):
         sys.exit(1)
-    
+
     try:
         # STEP 1: 重複検出
         print("\n🔍 STEP 1: 重複検出")

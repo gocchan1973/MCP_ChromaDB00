@@ -96,6 +96,8 @@ def main():
     
     # requirements.txtを解析
     required_packages = parse_requirements()
+    # 必ずset型に変換
+    required_packages = set(required_packages)
     print(f"📋 requirements.txtに記載されたパッケージ数: {len(required_packages)}")
     print(f"   {', '.join(sorted(required_packages))}")
     
