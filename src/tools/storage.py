@@ -4,11 +4,10 @@ import uuid
 from datetime import datetime
 from typing import Dict, Any, List, Optional
 
-@dataclass
 class ChromaDBStorage:
     """ChromaDBへのデータ保存管理"""
     
-    collection_name: str = "development_conversations"
+    collection_name: str = "sister_chat_history_v4"
     
     def __init__(self, collection_name=None):
         """ストレージの初期化"""

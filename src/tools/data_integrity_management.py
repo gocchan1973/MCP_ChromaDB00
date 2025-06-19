@@ -33,8 +33,8 @@ def _safe_content_preview(content: Any) -> str:
 def register_data_integrity_tools(mcp, db_manager):
     """データ整合性管理ツールを登録"""
     
-    @mcp.tool(name="bb7_chroma_integrity_validate_large_dataset")
-    def validate_large_dataset(
+    @mcp.tool()
+    def chroma_integrity_validate_large_dataset(
         collection_name: str = "sister_chat_history_temp_repair",
         batch_size: int = 0,  # 0 = 自動最適化
         quality_threshold: float = 0.9,
@@ -165,10 +165,8 @@ def register_data_integrity_tools(mcp, db_manager):
                 "error": str(e),
                 "collection_name": collection_name,
                 "processing_time_ms": (time.time() - start_time) * 1000
-            }
-
-    @mcp.tool(name="bb7_chroma_integrity_detect_duplicates_advanced")
-    def detect_duplicates_advanced(
+            }    @mcp.tool()
+    def chroma_integrity_detect_duplicates_advanced(
         collection_name: str = "sister_chat_history_temp_repair",
         similarity_threshold: float = 0.95,
         algorithm: str = "hash",  # "hash", "metadata" (semanticは安全版では無効)
@@ -285,10 +283,8 @@ def register_data_integrity_tools(mcp, db_manager):
                 "error": str(e),
                 "collection_name": collection_name,
                 "processing_time_ms": (time.time() - start_time) * 1000
-            }
-
-    @mcp.tool(name="bb7_chroma_integrity_optimize_for_scale")
-    def optimize_for_scale(
+            }    @mcp.tool()
+    def chroma_integrity_optimize_for_scale(
         collection_name: str = "sister_chat_history_temp_repair",
         optimization_level: str = "comprehensive",
         auto_apply: bool = False,
@@ -375,10 +371,8 @@ def register_data_integrity_tools(mcp, db_manager):
                 "error": str(e),
                 "collection_name": collection_name,
                 "processing_time_ms": (time.time() - start_time) * 1000
-            }
-
-    @mcp.tool(name="bb7_chroma_integrity_monitor_realtime")
-    def monitor_realtime(
+            }    @mcp.tool()
+    def chroma_integrity_monitor_realtime(
         collection_name: str = "sister_chat_history_temp_repair",
         monitoring_duration_seconds: int = 10,  # 短縮
         alert_threshold: float = 0.8,

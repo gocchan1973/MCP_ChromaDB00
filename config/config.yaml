@@ -2,7 +2,7 @@
 
 # ChromaDB設定
 chromadb:
-  collection: "development_conversations"
+  collection: "sister_chat_history_v4"
   # 以下はオプション設定（必要に応じて有効化）
   # host: "localhost"  # リモートChromaDBを使用する場合
   # port: 8000        # リモートChromaDBのポート
