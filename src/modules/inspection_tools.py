@@ -7,6 +7,7 @@ from typing import Dict, List, Optional, Any
 import json
 import statistics
 from datetime import datetime
+from config.global_settings import GlobalSettings
 
 
 def register_inspection_tools(mcp, manager):
@@ -14,7 +15,7 @@ def register_inspection_tools(mcp, manager):
     
     @mcp.tool()
     def chroma_inspect_collection_comprehensive(
-        collection_name: str = "sister_chat_history_v4",
+        collection_name: Optional[str] = None,
         inspection_level: str = "full",
         include_vectors: bool = True,
         include_embeddings: bool = True,
@@ -26,11 +27,15 @@ def register_inspection_tools(mcp, manager):
             collection_name: 精査対象コレクション名
             inspection_level: 精査レベル (basic, standard, full, deep)
             include_vectors: ベクトル情報を含める
-            include_embeddings: エンベディング詳細を含める
-            check_integrity: 整合性チェックを実行
+            include_embeddings: エンベディング詳細を含める            check_integrity: 整合性チェックを実行
         Returns: 包括的精査結果
         """
         try:
+            # グローバル設定からデフォルトコレクション名を取得
+            if collection_name is None:
+                global_settings = GlobalSettings()
+                collection_name = str(global_settings.get_setting("default_collection.name", "sister_chat_history_v4"))
+            
             if not manager.initialized:
                 manager.safe_initialize()
             
@@ -151,10 +156,9 @@ def register_inspection_tools(mcp, manager):
             
         except Exception as e:
             return {"success": False, "error": str(e)}
-    
     @mcp.tool()
     def chroma_inspect_document_details(
-        collection_name: str = "sister_chat_history_v4",
+        collection_name: Optional[str] = None,
         document_ids: Optional[List[str]] = None,
         limit: int = 10,
         include_vectors: bool = False
@@ -165,10 +169,14 @@ def register_inspection_tools(mcp, manager):
             collection_name: 対象コレクション名
             document_ids: 特定ドキュメントID（None=全体サンプリング）
             limit: 取得制限数
-            include_vectors: ベクトル情報を含める
-        Returns: ドキュメント詳細情報
+            include_vectors: ベクトル情報を含める        Returns: ドキュメント詳細情報
         """
         try:
+            # グローバル設定からデフォルトコレクション名を取得
+            if collection_name is None:
+                global_settings = GlobalSettings()
+                collection_name = str(global_settings.get_setting("default_collection.name", "sister_chat_history_v4"))
+            
             if not manager.initialized:
                 manager.safe_initialize()
             
@@ -213,21 +221,24 @@ def register_inspection_tools(mcp, manager):
             }
             
         except Exception as e:
-            return {"success": False, "error": str(e)}
-    
+            return {"success": False, "error": str(e)}    
     @mcp.tool()
     def chroma_inspect_metadata_schema(
-        collection_name: str = "sister_chat_history_v4",
+        collection_name: Optional[str] = None,
         sample_size: int = 100
     ) -> Dict[str, Any]:
         """
         メタデータスキーマの精査と分析
         Args:
             collection_name: 対象コレクション名
-            sample_size: サンプリングサイズ
-        Returns: メタデータスキーマ分析結果
+            sample_size: サンプリングサイズ        Returns: メタデータスキーマ分析結果
         """
         try:
+            # グローバル設定からデフォルトコレクション名を取得
+            if collection_name is None:
+                global_settings = GlobalSettings()
+                collection_name = str(global_settings.get_setting("default_collection.name", "sister_chat_history_v4"))
+            
             if not manager.initialized:
                 manager.safe_initialize()
             
@@ -292,11 +303,10 @@ def register_inspection_tools(mcp, manager):
             }
             
         except Exception as e:
-            return {"success": False, "error": str(e)}
-    
+            return {"success": False, "error": str(e)}    
     @mcp.tool()
     def chroma_inspect_vector_space(
-        collection_name: str = "sister_chat_history_v4",
+        collection_name: Optional[str] = None,
         analysis_type: str = "statistical",
         sample_size: int = 50
     ) -> Dict[str, Any]:
@@ -305,10 +315,14 @@ def register_inspection_tools(mcp, manager):
         Args:
             collection_name: 対象コレクション名
             analysis_type: 分析タイプ (statistical, clustering, similarity)
-            sample_size: 分析サンプルサイズ
-        Returns: ベクトル空間分析結果
+            sample_size: 分析サンプルサイズ        Returns: ベクトル空間分析結果
         """
         try:
+            # グローバル設定からデフォルトコレクション名を取得
+            if collection_name is None:
+                global_settings = GlobalSettings()
+                collection_name = str(global_settings.get_setting("default_collection.name", "sister_chat_history_v4"))
+            
             if not manager.initialized:
                 manager.safe_initialize()
             
@@ -376,21 +390,24 @@ def register_inspection_tools(mcp, manager):
             }
             
         except Exception as e:
-            return {"success": False, "error": str(e)}
-    
+            return {"success": False, "error": str(e)}    
     @mcp.tool()
     def chroma_inspect_data_integrity(
-        collection_name: str = "sister_chat_history_v4",
+        collection_name: Optional[str] = None,
         check_level: str = "standard"
     ) -> Dict[str, Any]:
         """
         データ整合性の包括的チェック
         Args:
             collection_name: 対象コレクション名
-            check_level: チェックレベル (basic, standard, thorough)
-        Returns: 整合性チェック結果
+            check_level: チェックレベル (basic, standard, thorough)        Returns: 整合性チェック結果
         """
         try:
+            # グローバル設定からデフォルトコレクション名を取得
+            if collection_name is None:
+                global_settings = GlobalSettings()
+                collection_name = str(global_settings.get_setting("default_collection.name", "sister_chat_history_v4"))
+            
             if not manager.initialized:
                 manager.safe_initialize()
             

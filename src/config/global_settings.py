@@ -39,9 +39,20 @@ class GlobalSettings:
                             return str(abs_path)
             except Exception as e:
                 print(f"設定ファイル読み込みエラー: {e}")
+          # 3. 明示的なデフォルト（推測なし）
+        # プロジェクトルートを動的に検出
+        current_file = Path(__file__)
+        project_root = current_file
         
-        # 3. 明示的なデフォルト（推測なし）
-        default_path = Path(__file__).parent.parent.parent / "IrukaWorkspace" / "shared__ChromaDB_"
+        # MCP_ChromaDB00ディレクトリを探す
+        while project_root.parent != project_root:
+            if project_root.name == "MCP_ChromaDB00":
+                break
+            project_root = project_root.parent
+        
+        # VSC_WorkSpaceレベルに移動してIrukaWorkspaceを探す
+        workspace_root = project_root.parent
+        default_path = workspace_root / "IrukaWorkspace" / "shared__ChromaDB_"
         print(f"デフォルトパスを使用: {default_path}")
         return str(default_path)
 

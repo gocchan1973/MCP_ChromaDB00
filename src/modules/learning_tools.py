@@ -8,6 +8,7 @@ import os
 import json
 from pathlib import Path
 from datetime import datetime
+from config.global_settings import GlobalSettings
 
 
 def register_learning_tools(mcp, manager):
@@ -202,13 +203,12 @@ def register_learning_tools(mcp, manager):
             context: 追加のコンテキスト情報
             confirm_before_save: 保存前の確認を表示する
             show_target_collection: 対象コレクションを表示する
-        Returns: キャプチャ結果
-        """
+        Returns: キャプチャ結果        """
         try:
             if not manager.initialized:
-                manager.safe_initialize()
-            
-            collection_name = manager.config_manager.config.get('chat_collection', 'sister_chat_history_v4')
+                manager.safe_initialize()            # グローバル設定からデフォルトコレクション名を取得
+            global_settings = GlobalSettings()
+            collection_name = str(global_settings.get_setting("default_collection.name", "sister_chat_history_v4"))
             
             if show_target_collection:
                 print(f"Target collection: {collection_name}")
@@ -336,10 +336,9 @@ def register_learning_tools(mcp, manager):
                 manager.safe_initialize()
             
             from datetime import datetime, timedelta
-            start_date = datetime.now() - timedelta(days=days)
-            
-            # 履歴検索（簡易実装）
-            collection_name = manager.config_manager.config.get('chat_collection', 'sister_chat_history_v4')
+            start_date = datetime.now() - timedelta(days=days)            # 履歴検索（簡易実装）
+            global_settings = GlobalSettings()
+            collection_name = str(global_settings.get_setting("default_collection.name", "sister_chat_history_v4"))
             
             try:
                 collection = manager.chroma_client.get_collection(collection_name)

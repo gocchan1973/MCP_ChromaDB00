@@ -5,6 +5,7 @@
 
 from typing import Dict, Optional, Any
 from datetime import datetime
+from config.global_settings import GlobalSettings
 
 def register_management_tools(mcp, manager):
     """管理ツールを登録"""
@@ -82,18 +83,21 @@ def register_management_tools(mcp, manager):
                 return {"success": False, "message": "ChromaDB client not initialized"}
                 
         except Exception as e:
-            return {"success": False, "message": f"Error deleting collection: {str(e)}"}
-    
+            return {"success": False, "message": f"Error deleting collection: {str(e)}"}    
     @mcp.tool()
     async def chroma_add_documents(
         documents: list, 
         metadatas: Optional[list] = None, 
         ids: Optional[list] = None, 
-        collection_name: str = "general_knowledge"
+        collection_name: Optional[str] = None
     ) -> dict:
         """複数ドキュメント一括追加"""
         if not manager.initialized:
             await manager.initialize()
+          # グローバル設定からデフォルトコレクション名を取得
+        if collection_name is None:
+            global_settings = GlobalSettings()
+            collection_name = str(global_settings.get_setting("default_collection.name", "general_knowledge"))
         
         try:
             if manager.chroma_client:

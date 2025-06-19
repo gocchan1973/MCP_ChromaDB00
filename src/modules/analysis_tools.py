@@ -5,15 +5,19 @@
 
 from typing import Dict, Optional, Any
 from datetime import datetime
+from config.global_settings import GlobalSettings
 
 def register_analysis_tools(mcp, manager):
-    """分析ツールを登録"""
-    
+    """分析ツールを登録"""    
     @mcp.tool()
-    async def chroma_similarity_search(query_texts: list, collection_name: str = "general_knowledge", n_results: int = 5, where: Optional[dict] = None) -> dict:
+    async def chroma_similarity_search(query_texts: list, collection_name: Optional[str] = None, n_results: int = 5, where: Optional[dict] = None) -> dict:
         """類似度検索"""
         if not manager.initialized:
             await manager.initialize()
+          # グローバル設定からデフォルトコレクション名を取得
+        if collection_name is None:
+            global_settings = GlobalSettings()
+            collection_name = str(global_settings.get_setting("default_collection.name", "general_knowledge"))
         
         try:
             if manager.chroma_client is not None:

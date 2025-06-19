@@ -10,7 +10,7 @@ def register_extraction_tools(mcp, manager):
     """データ抽出ツールを登録"""
     
     @mcp.tool()
-    def chroma_extract_by_filter(collection_name: str = "sister_chat_history_v4", filter: Dict[str, Any] = {}, output_format: str = "json") -> Dict[str, Any]:
+    def chroma_extract_by_filter(collection_name: Optional[str] = None, filter: Dict[str, Any] = {}, output_format: str = "json") -> Dict[str, Any]:
         """メタデータフィルターによるデータ抽出"""
         try:
             if manager.chroma_client:
@@ -69,7 +69,7 @@ def register_extraction_tools(mcp, manager):
             return {"success": False, "message": f"Data extraction error: {str(e)}"}
     
     @mcp.tool()
-    def chroma_extract_by_date_range(collection_name: str = "sister_chat_history_v4", start_date: str = "", end_date: str = "", date_field: str = "timestamp") -> Dict[str, Any]:
+    def chroma_extract_by_date_range(collection_name: Optional[str] = None, start_date: str = "", end_date: str = "", date_field: str = "timestamp") -> Dict[str, Any]:
         """日付範囲によるデータ抽出"""
         try:
             if not start_date or not end_date:

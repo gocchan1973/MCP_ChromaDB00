@@ -7,6 +7,7 @@ from typing import Dict, List, Optional, Any
 import json
 import time
 from datetime import datetime
+from config.global_settings import GlobalSettings
 
 
 def register_integrity_tools(mcp, manager):
@@ -146,11 +147,10 @@ def register_integrity_tools(mcp, manager):
             }
             
         except Exception as e:
-            return {"success": False, "error": str(e)}
-    
+            return {"success": False, "error": str(e)}    
     @mcp.tool()
     def chroma_analyze_embeddings_safe(
-        collection_name: str = "sister_chat_history_v4",
+        collection_name: Optional[str] = None,
         analysis_type: str = "statistical",
         sample_size: int = 20
     ) -> Dict[str, Any]:
@@ -160,9 +160,14 @@ def register_integrity_tools(mcp, manager):
             collection_name: 対象コレクション名
             analysis_type: 分析タイプ (statistical, similarity, basic)
             sample_size: 分析サンプルサイズ
-        Returns: 安全なエンベディング分析結果
+        Returns: 安全なエンベディング分析結果        
         """
         try:
+            # グローバル設定からデフォルトコレクション名を取得
+            if collection_name is None:
+                global_settings = GlobalSettings()
+                collection_name = str(global_settings.get_setting("default_collection.name", "sister_chat_history_v4"))
+            
             if not manager.initialized:
                 manager.safe_initialize()
             

@@ -7,6 +7,7 @@ from typing import Dict, List, Optional, Any
 import json
 import os
 from datetime import datetime
+from config.global_settings import GlobalSettings
 
 
 def register_backup_tools(mcp, manager):
@@ -160,11 +161,10 @@ def register_backup_tools(mcp, manager):
             }
             
         except Exception as e:
-            return {"success": False, "error": str(e)}
-    
+            return {"success": False, "error": str(e)}    
     @mcp.tool()
     def chroma_cleanup_duplicates(
-        collection_name: str = "general_knowledge",
+        collection_name: Optional[str] = None,
         similarity_threshold: float = 0.95,
         dry_run: bool = True
     ) -> Dict[str, Any]:
@@ -177,6 +177,10 @@ def register_backup_tools(mcp, manager):
         Returns: クリーンアップ結果
         """
         try:
+            # グローバル設定からデフォルトコレクション名を取得
+            if collection_name is None:
+                global_settings = GlobalSettings()
+                collection_name = str(global_settings.get_setting("default_collection.name", "general_knowledge"))
             if not manager.initialized:
                 manager.safe_initialize()
             

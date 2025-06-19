@@ -8,6 +8,7 @@ import os
 import platform
 import psutil
 from datetime import datetime
+from config.global_settings import GlobalSettings
 
 
 def register_monitoring_tools(mcp, manager):
@@ -307,11 +308,10 @@ def register_monitoring_tools(mcp, manager):
                 "default_settings": {},
                 "environment_info": {}
             }
-            
             if hasattr(manager, 'config_manager') and manager.config_manager:
                 settings["default_settings"] = {
                     "default_collection": manager.config_manager.config.get('default_collection', 'general_knowledge'),
-                    "chat_collection": manager.config_manager.config.get('chat_collection', 'sister_chat_history_v4'),
+                    "chat_collection": str(GlobalSettings().get_setting("default_collection.name", "sister_chat_history_v4")),
                     "chunk_size": manager.config_manager.config.get('chunk_size', 1500),
                     "overlap": manager.config_manager.config.get('overlap', 300),
                     "backup_directory": manager.config_manager.config.get('backup_directory', './backups')

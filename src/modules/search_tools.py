@@ -4,15 +4,21 @@
 """
 
 from typing import Dict, Optional, Any
+from config.global_settings import GlobalSettings
 
 def register_search_tools(mcp, manager):
     """検索ツールを登録"""
     
     @mcp.tool()
-    async def chroma_search_text(query: str, n_results: int = 5, collection_name: str = "general_knowledge") -> dict:
+    async def chroma_search_text(query: str, n_results: int = 5, collection_name: Optional[str] = None) -> dict:
         """テキスト検索"""
         if not manager.initialized:
             await manager.initialize()
+        
+        # グローバル設定からデフォルトコレクション名を取得
+        if collection_name is None:
+            global_settings = GlobalSettings()
+            collection_name = str(global_settings.get_setting("default_collection.name", "general_knowledge"))
         
         try:
             if collection_name not in manager.collections:
@@ -35,18 +41,21 @@ def register_search_tools(mcp, manager):
             }
             
         except Exception as e:
-            return {"success": False, "message": f"Search error: {str(e)}"}
-    
+            return {"success": False, "message": f"Search error: {str(e)}"}    
     @mcp.tool()
     async def chroma_search_filtered(
         query: str, 
         filter_metadata: Optional[dict] = None, 
         n_results: int = 5, 
-        collection_name: str = "general_knowledge"
+        collection_name: Optional[str] = None
     ) -> dict:
         """フィルター付き検索"""
         if not manager.initialized:
             await manager.initialize()
+          # グローバル設定からデフォルトコレクション名を取得
+        if collection_name is None:
+            global_settings = GlobalSettings()
+            collection_name = str(global_settings.get_setting("default_collection.name", "general_knowledge"))
         
         try:
             if collection_name not in manager.collections:

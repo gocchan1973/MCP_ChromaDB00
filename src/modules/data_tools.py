@@ -5,15 +5,19 @@
 
 from typing import Dict, Optional, Any
 from datetime import datetime
+from config.global_settings import GlobalSettings
 
 def register_data_tools(mcp, manager):
-    """データツールを登録"""
-    
+    """データツールを登録"""    
     @mcp.tool()
-    async def chroma_import_data(file_path: str, collection_name: str = "general_knowledge", format: str = "json") -> dict:
+    async def chroma_import_data(file_path: str, collection_name: Optional[str] = None, format: str = "json") -> dict:
         """データインポート"""
         if not manager.initialized:
             await manager.initialize()
+          # グローバル設定からデフォルトコレクション名を取得
+        if collection_name is None:
+            global_settings = GlobalSettings()
+            collection_name = str(global_settings.get_setting("default_collection.name", "general_knowledge"))
         
         try:
             from pathlib import Path
