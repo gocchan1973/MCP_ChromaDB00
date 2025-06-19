@@ -1,9 +1,9 @@
 {
   "name": "chroma_modular",
-  "version": "2.0.0",
-  "description": "ChromaDB MCP Server - Modular Architecture with 20+ Tools",
+  "version": "2.2.0",
+  "description": "ChromaDB MCP Server - Modular Architecture with 53+ Tools",
   "command": "python",
-  "args": ["src/fastmcp_modular_server.py"],
+  "args": ["src/fastmcp_main_modular.py"],
   "cwd": "${MCP_CHROMADB_PROJECT_PATH}",
   "env": {
     "PYTHONPATH": "${MCP_CHROMADB_PROJECT_PATH}"
