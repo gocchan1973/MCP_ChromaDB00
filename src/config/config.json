@@ -3,10 +3,16 @@
     "use_prefix": false,
     "prefix": "",
     "separator": "_"
-  },  "default_collection": {
+  },
+  "default_collection": {
     "name": "sister_chat_history_v4",
-    "description": "完全復旧済みのメインコレクション（765文書、HNSWインデックス完全修復済み）"
-  },  "database": {
+    "description": "メインコレクション"
+  },
+  "cleanup": {
+    "min_length": 1,
+    "max_length": 10000
+  },
+  "database": {
     "path": "f:/副業/VSC_WorkSpace/IrukaWorkspace/shared__ChromaDB_",
     "host": "localhost", 
     "port": 8000
@@ -27,5 +33,7 @@
     "format": "%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     "file_enabled": true,
     "console_enabled": true
-  }
+  },
+  "learning_error_log_dir": "F:/副業/VSC_WorkSpace/MCP_ChromaDB00/logs/learning_error_logs",
+  "context_keywords": ["ブッ込み作戦", "新作戦名"]
 }

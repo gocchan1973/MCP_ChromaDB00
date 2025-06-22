@@ -9,95 +9,16 @@ import json
 from pathlib import Path
 from datetime import datetime
 from config.global_settings import GlobalSettings
+from modules.learning_logger import log_learning_error
+from bs4 import BeautifulSoup, Tag
+import re
+from modules.html_learning import chroma_store_html_impl
+import hashlib
+from modules.chroma_store_core import chroma_store_file
 
 
 def register_learning_tools(mcp, manager):
     """学習・インポート関連ツールを登録"""
-
-    def _chroma_store_html_impl(
-        html_path: str,
-        collection_name: Optional[str] = None,
-        chunk_size: int = 1000,
-        overlap: int = 200,
-        project: Optional[str] = None,
-        include_related_files: bool = True
-    ) -> Dict[str, Any]:
-        """
-        HTMLファイルとその関連ファイルをChromaDBに学習させる（内部実装）
-        """
-        try:
-            if not manager.initialized:
-                manager.initialize()
-
-            if collection_name is None:
-                # デフォルトコレクション名をグローバル設定から取得 (フォールバック値を削除)
-                collection_name = manager.config_manager.config.get('default_collection')
-                if not collection_name:
-                     return {"success": False, "error": "Default collection name not configured."}
-            
-            if not os.path.exists(html_path):
-                return {"success": False, "error": "HTML file not found"}
-            
-            # HTMLファイルを読み込み
-            with open(html_path, 'r', encoding='utf-8') as f:
-                html_content = f.read()
-            
-            # 簡単なHTMLパース（BeautifulSoupがない場合の代替）
-            import re
-            text_content = re.sub(r'<[^>]+>', ' ', html_content)
-            text_content = re.sub(r'\s+', ' ', text_content).strip()
-            
-            # チャンクに分割
-            chunks = []
-            for i in range(0, len(text_content), chunk_size - overlap):
-                chunk = text_content[i:i + chunk_size]
-                if chunk.strip():
-                    chunks.append(chunk)
-            
-            # コレクション取得または作成
-            try:
-                collection = manager.chroma_client.get_collection(collection_name)
-            except:
-                collection = manager.chroma_client.create_collection(collection_name)
-            
-            # ドキュメントを追加
-            documents = []
-            metadatas = []
-            ids = []
-            
-            for i, chunk in enumerate(chunks):
-                doc_id = f"html_{Path(html_path).stem}_{i}"
-                metadata = {
-                    "source": "html",
-                    "file_path": html_path,
-                    "chunk_index": i,
-                    "total_chunks": len(chunks),
-                    "file_type": "html"
-                }
-                
-                if project:
-                    metadata["project"] = project
-                
-                documents.append(chunk)
-                metadatas.append(metadata)
-                ids.append(doc_id)
-            
-            collection.add(
-                documents=documents,
-                metadatas=metadatas,
-                ids=ids
-            )
-            
-            return {
-                "success": True,
-                "collection_name": collection_name,
-                "chunks_added": len(chunks),
-                "file_processed": html_path,
-                "total_characters": len(text_content)
-            }
-            
-        except Exception as e:
-            return {"success": False, "error": str(e)}
 
     @mcp.tool()
     def chroma_store_html(
@@ -111,8 +32,13 @@ def register_learning_tools(mcp, manager):
         """
         HTMLファイルとその関連ファイルをChromaDBに学習させる
         """
-        return _chroma_store_html_impl(
+        # --- グローバル設定値のcollection_nameを優先 ---
+        if not collection_name or collection_name == "None":
+            global_settings = GlobalSettings()
+            collection_name = str(global_settings.get_setting("default_collection.name"))
+        return chroma_store_html_impl(
             html_path=html_path,
+            manager=manager,
             collection_name=collection_name,
             chunk_size=chunk_size,
             overlap=overlap,
@@ -143,56 +69,92 @@ def register_learning_tools(mcp, manager):
         Returns: 学習結果
         """
         try:
-            if not os.path.exists(folder_path):
-                return {"success": False, "error": "Folder not found"}
-            
+            # --- manager/chroma_clientの厳密な初期化チェック ---
+            if manager is None or not hasattr(manager, "initialized"):
+                return {"success": False, "error": "ChromaDB manager is not provided or invalid."}
+            if not manager.initialized:
+                manager.initialize()
+            if not hasattr(manager, "chroma_client") or manager.chroma_client is None:
+                return {"success": False, "error": "ChromaDB manager is not properly initialized (chroma_client is None)."}
+            # --- カレントディレクトリと絶対パス解決の安全化 ---
+            abs_folder_path = os.path.abspath(folder_path)
+            print(f"[chroma_store_html_folder] 現在のカレントディレクトリ: {os.getcwd()}")
+            print(f"[chroma_store_html_folder] 対象フォルダの絶対パス: {abs_folder_path}")
+            if not os.path.exists(abs_folder_path):
+                return {"success": False, "error": f"Folder not found: {abs_folder_path}"}
+            # --- グローバル設定値のcollection_nameを優先 ---
+            if not collection_name or collection_name == "None":
+                global_settings = GlobalSettings()
+                collection_name = str(global_settings.get_setting("default_collection.name"))
             html_files = []
-            
             if recursive:
-                for root, dirs, files in os.walk(folder_path):
+                for root, dirs, files in os.walk(abs_folder_path):
                     for file in files:
                         if file.lower().endswith(('.html', '.htm')):
                             html_files.append(os.path.join(root, file))
             else:
-                for file in os.listdir(folder_path):
+                for file in os.listdir(abs_folder_path):
                     if file.lower().endswith(('.html', '.htm')):
-                        html_files.append(os.path.join(folder_path, file))
-            
+                        html_files.append(os.path.join(abs_folder_path, file))
             if not html_files:
-                return {"success": False, "error": "No HTML files found in folder"}
-            
+                return {"success": False, "error": f"No HTML files found in folder: {abs_folder_path}"}
             results = []
             total_chunks = 0
             total_files = 0
-            
+            collection_error = None
             for html_file in html_files:
                 try:
-                    result = _chroma_store_html_impl(
+                    result = chroma_store_html_impl(
                         html_path=html_file,
+                        manager=manager,
                         collection_name=collection_name,
                         chunk_size=chunk_size,
                         overlap=overlap,
                         project=project,
                         include_related_files=include_related_files
                     )
-                    
+                    # --- コレクション取得失敗時は即returnで全体中断 ---
+                    if not result.get("success") and result.get("error", "").startswith("Collection"):
+                        print(f"[ERROR] コレクション取得失敗: {result.get('error')}")
+                        results.append({
+                            "file": html_file,
+                            "success": False,
+                            "error": result.get("error")
+                        })
+                        collection_error = result.get("error")
+                        break
                     if result.get("success"):
                         total_chunks += result.get("chunks_added", 0)
                         total_files += 1
-                    
+                    # --- 失敗時の詳細エラー・除外理由を標準出力に表示 ---
+                    if not result.get("success"):
+                        print(f"[ERROR] 学習失敗: {html_file}")
+                        if result.get("error"):
+                            print(f"  エラー内容: {result.get('error')}")
+                        if result.get("excluded"):
+                            print(f"  除外理由: {result.get('excluded')}")
+                        if result.get("excluded_samples"):
+                            print(f"  除外サンプル: {result.get('excluded_samples')}")
                     results.append({
                         "file": html_file,
                         "success": result.get("success", False),
-                        "chunks": result.get("chunks_added", 0)
+                        "chunks": result.get("chunks_added", 0),
+                        "error": result.get("error") if not result.get("success") else None
                     })
-                    
                 except Exception as e:
+                    print(f"[ERROR] 例外発生: {html_file} | {str(e)}")
                     results.append({
                         "file": html_file,
                         "success": False,
                         "error": str(e)
                     })
-            
+            # --- コレクション取得失敗時は全体エラーとして返す ---
+            if collection_error:
+                return {
+                    "success": False,
+                    "error": collection_error,
+                    "results": results
+                }
             return {
                 "success": True,
                 "total_files_processed": total_files,
@@ -200,10 +162,51 @@ def register_learning_tools(mcp, manager):
                 "files_found": len(html_files),
                 "results": results
             }
-            
         except Exception as e:
+            log_learning_error({
+                "function": "chroma_store_html_folder",
+                "file": folder_path,
+                "collection": collection_name,
+                "error": str(e),
+                "params": {
+                    "chunk_size": chunk_size,
+                    "overlap": overlap,
+                    "project": project,
+                    "recursive": recursive
+                }
+            })
             return {"success": False, "error": str(e)}
     
+    @mcp.tool()
+    def chroma_store_file_tool(
+        file_path: str,
+        collection_name: Optional[str] = None,
+        chunk_size: int = 1000,
+        overlap: int = 200,
+        project: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """
+        一般ファイル（テキスト/Markdown等）をChromaDBに学習させるツール
+        Args:
+            file_path: 対象ファイルパス
+            collection_name: 保存先コレクション名（None=デフォルト使用）
+            chunk_size: テキストチャンクサイズ
+            overlap: チャンク間のオーバーラップ
+            project: プロジェクト名（メタデータ用）
+        Returns: 学習結果
+        """
+        # --- グローバル設定値のcollection_nameを優先 ---
+        if not collection_name or collection_name == "None":
+            global_settings = GlobalSettings()
+            collection_name = str(global_settings.get_setting("default_collection.name"))
+        return chroma_store_file(
+            file_path=file_path,
+            collection_name=collection_name,
+            chunk_size=chunk_size,
+            overlap=overlap,
+            project=project,
+            manager=manager
+        )
     @mcp.tool()
     def chroma_conversation_capture(
         conversation: List[Dict[str, Any]],
@@ -225,7 +228,7 @@ def register_learning_tools(mcp, manager):
             # グローバル設定からデフォルトコレクション名を取得 (フォールバック値を削除)
             global_settings = GlobalSettings()
             collection_name = str(global_settings.get_setting("default_collection.name"))
-            if not collection_name or collection_name == "None": # get_settingがNoneを返す可能性とstr(None)になる場合を考慮
+            if not collection_name or collection_name == "None":
                  return {"success": False, "error": "Default conversation collection name not configured."}
 
             if show_target_collection:
@@ -238,6 +241,11 @@ def register_learning_tools(mcp, manager):
             
             # コレクション取得または作成
             try:
+                # 既存コレクション一覧を取得し、存在しない場合はエラーで終了
+                existing_collections = [col['name'] for col in manager.chroma_client.list_collections()]
+                if collection_name not in existing_collections:
+                    return {"success": False, "error": f"Collection '{collection_name}' does not exist. 新規作成は禁止されています。"}
+                # コレクション取得
                 collection = manager.chroma_client.get_collection(collection_name)
             except:
                 collection = manager.chroma_client.create_collection(collection_name)
@@ -251,8 +259,6 @@ def register_learning_tools(mcp, manager):
             
             for i, conv_entry in enumerate(conversation):
                 doc_id = f"conv_{timestamp}_{i}"
-                
-                # 会話内容をテキストとして結合
                 content = ""
                 if isinstance(conv_entry, dict):
                     if "role" in conv_entry and "content" in conv_entry:
@@ -261,17 +267,17 @@ def register_learning_tools(mcp, manager):
                         content = str(conv_entry)
                 else:
                     content = str(conv_entry)
-                
+                # --- 会話エントリのハッシュ値を追加 ---
+                entry_hash = hashlib.sha256(content.encode('utf-8')).hexdigest()
                 metadata = {
                     "source": "conversation",
                     "timestamp": timestamp,
                     "entry_index": i,
-                    "type": "chat_history"
+                    "type": "chat_history",
+                    "entry_hash": entry_hash
                 }
-                
                 if context:
                     metadata.update(context)
-                
                 documents.append(content)
                 metadatas.append(metadata)
                 ids.append(doc_id)
@@ -290,47 +296,14 @@ def register_learning_tools(mcp, manager):
             }
             
         except Exception as e:
-            return {"success": False, "error": str(e)}
-    
-    @mcp.tool()
-    def chroma_conversation_auto_capture(
-        source: str = "github_copilot",
-        continuous: bool = True,
-        filter_keywords: Optional[List[str]] = None,
-        min_quality_score: float = 0.7
-    ) -> Dict[str, Any]:
-        """
-        会話の自動キャプチャ設定
-        Args:
-            source: 会話ソース
-            continuous: 継続的キャプチャの有効化
-            filter_keywords: フィルターキーワード
-            min_quality_score: 最小品質スコア
-        Returns: 自動キャプチャ設定結果
-        """
-        try:
-            settings = {
-                "auto_capture_enabled": continuous,
-                "source": source,
-                "filter_keywords": filter_keywords or [],
-                "min_quality_score": min_quality_score,
-                "last_updated": datetime.now().isoformat()
-            }
-            
-            # 設定をファイルに保存（簡易実装）
-            config_dir = Path("./config")
-            config_dir.mkdir(exist_ok=True)
-            
-            with open(config_dir / "auto_capture_settings.json", 'w') as f:
-                json.dump(settings, f, indent=2)
-            
-            return {
-                "success": True,
-                "message": "Auto-capture settings updated",
-                "settings": settings
-            }
-            
-        except Exception as e:
+            log_learning_error({
+                "function": "chroma_conversation_capture",
+                "collection": collection_name if 'collection_name' in locals() else None,
+                "error": str(e),
+                "params": {
+                    "entries": len(conversation) if 'conversation' in locals() else None
+                }
+            })
             return {"success": False, "error": str(e)}
     
     @mcp.tool()
@@ -356,7 +329,9 @@ def register_learning_tools(mcp, manager):
             from datetime import datetime, timedelta
             start_date = datetime.now() - timedelta(days=days)            # 履歴検索（簡易実装）
             global_settings = GlobalSettings()
-            collection_name = str(global_settings.get_setting("default_collection.name", "sister_chat_history_v4"))
+            collection_name = str(global_settings.get_setting("default_collection.name"))
+            if not collection_name or collection_name == "None":
+                return {"success": False, "error": "Default collection name not configured in global settings."}
             
             try:
                 collection = manager.chroma_client.get_collection(collection_name)
@@ -399,6 +374,262 @@ def register_learning_tools(mcp, manager):
                     "message": "No existing history collection found",
                     "analysis_results": {"entries_found": 0}
                 }
-            
         except Exception as e:
+            log_learning_error({
+                "function": "chroma_discover_history",
+                "collection": locals().get("collection_name", None),
+                "error": str(e),
+                "params": {
+                    "days": days,
+                    "project": project
+                }
+            })
             return {"success": False, "error": str(e)}
+
+    @mcp.tool()
+    def chroma_extract_important_html_dynamic(
+        html_path: str,
+        collection_name: Optional[str] = None,
+        keywords: Optional[List[str]] = None,
+        auto_keyword: bool = True,
+        top_k: int = 10
+    ) -> Dict[str, Any]:
+        """
+        HTMLから重要キーワードを動的抽出し、重要文脈を返す（TF-IDF/頻出語ベース）
+        Args:
+            html_path: 対象HTMLファイルパス
+            collection_name: コレクション名（未使用）
+            keywords: ユーザー指定キーワード（省略時は自動抽出）
+            auto_keyword: 自動抽出有効
+            top_k: 上位キーワード数
+        Returns: 重要キーワード・重要文脈リスト
+        """
+        try:
+            if not os.path.exists(html_path):
+                return {"success": False, "error": "HTML file not found"}
+            with open(html_path, 'r', encoding='utf-8') as f:
+                html_content = f.read()
+            soup = BeautifulSoup(html_content, "html.parser")
+            # セクション・段落分割（既存ロジック流用）
+            sections = []
+            for section in soup.find_all(['section', 'article', 'main', 'div']):
+                if not isinstance(section, Tag):
+                    continue
+                text = section.get_text(separator=' ', strip=True)
+                if text and len(text) > 30:
+                    heading_tag = section.find(['h1', 'h2', 'h3', 'h4', 'h5', 'h6'])
+                    if heading_tag and hasattr(heading_tag, 'get_text'):
+                        heading = heading_tag.get_text(strip=True)
+                    else:
+                        heading = None
+                    meta = {
+                        "heading": heading,
+                        "id": section.get('id'),
+                        "class": section.get('class'),
+                        "file_path": html_path
+                    }
+                    sections.append((text, meta))
+            chunked = []
+            for text, meta in sections:
+                for para in re.split(r'[\n。！？]', text):
+                    para = para.strip()
+                    if len(para) > 20:
+                        chunked.append((para, meta))
+            # 品質バリデーション
+            unique_texts = set()
+            valid_chunks = []
+            for text, meta in chunked:
+                if len(text) < 20 or text in unique_texts:
+                    continue
+                unique_texts.add(text)
+                valid_chunks.append((text, meta))
+            # --- キーワード自動抽出 ---
+            if auto_keyword or not keywords:
+                from collections import Counter
+                all_words = []
+                for text, _ in valid_chunks:
+                    # 日本語対応: 形態素解析が理想だが、簡易的に単語分割
+                    words = re.findall(r'\w+', text)
+                    all_words += words
+                freq = Counter(all_words)
+                keywords = [w for w, _ in freq.most_common(top_k)]
+            # --- 重要チャンク抽出 ---
+            important_chunks = [
+                {"text": text, "meta": meta} for text, meta in valid_chunks
+                if any(kw in text for kw in keywords)
+            ]
+            return {
+                "success": True,
+                "auto_keywords": keywords,
+                "important_chunks": important_chunks,
+                "total_chunks": len(valid_chunks),
+                "matched_chunks": len(important_chunks)
+            }
+        except Exception as e:
+            log_learning_error({
+                "function": "chroma_extract_important_html_dynamic",
+                "file": html_path,
+                "error": str(e)
+            })
+            return {"success": False, "error": str(e)}
+
+    @mcp.tool()
+    def chroma_search_text_deep(
+        collection_name: str,
+        query: str,
+        n_results: int = 20,
+        auto_keyword: bool = True,
+        top_k: int = 10
+    ) -> Dict[str, Any]:
+        """
+        標準検索＋動的キーワード抽出による深掘り文脈検索（TF-IDF/頻出語ベース）
+        Args:
+            collection_name: 検索対象コレクション名
+            query: 検索クエリ（キーワードや話題）
+            n_results: 最大取得件数
+            auto_keyword: キーワード自動抽出有効
+            top_k: 上位キーワード数
+        Returns: 重要キーワード・重要文脈リスト
+        """
+        try:
+            # 1. 標準検索
+            results = manager.chroma_client.get_collection(collection_name).get(query_texts=[query], n_results=n_results)
+            docs = results.get("documents", [])
+            metadatas = results.get("metadatas", [])
+            # docsとmetadatasをペアに
+            doc_meta_pairs = list(zip(docs, metadatas))
+            # 2. キーワード自動抽出
+            if auto_keyword:
+                from collections import Counter
+                all_words = []
+                for doc, _ in doc_meta_pairs:
+                    words = re.findall(r'\w+', doc)
+                    all_words += words
+                freq = Counter(all_words)
+                keywords = [w for w, _ in freq.most_common(top_k)]
+            else:
+                keywords = query.split()
+            # 3. md優先: source:markdownを持つものを優先
+            md_pairs = [ (doc, meta) for doc, meta in doc_meta_pairs if meta.get("source") == "markdown" ]
+            other_pairs = [ (doc, meta) for doc, meta in doc_meta_pairs if meta.get("source") != "markdown" ]
+            # 重要文脈抽出
+            def extract_chunks(pairs):
+                return [doc for doc, meta in pairs if any(kw in doc for kw in keywords)]
+            important_chunks = extract_chunks(md_pairs)
+            # mdでヒットしなければ全体から
+            if not important_chunks:
+                important_chunks = extract_chunks(other_pairs)
+            return {
+                "success": True,
+                "auto_keywords": keywords,
+                "important_chunks": important_chunks,
+                "total_documents": len(docs),
+                "matched_chunks": len(important_chunks)
+            }
+        except Exception as e:
+            log_learning_error({
+                "function": "chroma_search_text_deep",
+                "collection": collection_name,
+                "error": str(e)
+            })
+            return {"success": False, "error": str(e)}
+
+    from utils.cleanup_tools import chroma_cleanup_documents_impl
+    @mcp.tool()
+    def chroma_cleanup_documents(
+        collection_name: Optional[str] = None,
+        min_length: Optional[int] = None,
+        max_length: Optional[int] = None,
+        split_large: bool = True,
+        delete_large: bool = False
+    ) -> Dict[str, Any]:
+        """
+        コレクション内の空ドキュメント削除・極端に大きいドキュメントの分割/削除
+        Args:
+            collection_name: 対象コレクション名（None=グローバル設定値を自動利用）
+            min_length: 空判定の最小長さ（設定値優先、なければ1）
+            max_length: 分割/削除判定の最大長さ（設定値優先、なければ10000）
+            split_large: Trueなら大きいドキュメントを分割して再追加、Falseなら削除
+            delete_large: Trueなら大きいドキュメントを削除（split_largeより優先）
+        Returns: 処理結果
+        """
+        # --- グローバル設定値のcollection_name・min_length・max_lengthを優先 ---
+        global_settings = GlobalSettings()
+        if not collection_name or collection_name == "None":
+            collection_name = str(global_settings.get_setting("default_collection.name"))
+        min_length_val = min_length if min_length is not None else global_settings.get_setting("cleanup.min_length", 1)
+        max_length_val = max_length if max_length is not None else global_settings.get_setting("cleanup.max_length", 10000)
+        min_length_val = int(min_length_val)
+        max_length_val = int(max_length_val)
+        return chroma_cleanup_documents_impl(
+            manager=manager,
+            collection_name=collection_name,
+            min_length=min_length_val,
+            max_length=max_length_val,
+            split_large=split_large,
+            delete_large=delete_large
+        )
+    from utils.cleanup_tools_large import chroma_cleanup_large_documents_impl
+    @mcp.tool()
+    def chroma_cleanup_large_documents(
+        collection_name: Optional[str] = None,
+        max_length: Optional[int] = None,
+        split_large: bool = True,
+        delete_large: bool = False
+    ) -> Dict[str, Any]:
+        """
+        極端に大きいドキュメントの特定・分割/削除
+        Args:
+            collection_name: 対象コレクション名（None=グローバル設定値を自動利用）
+            max_length: 分割/削除判定の最大長さ（設定値優先、なければ10000）
+            split_large: Trueなら分割、Falseなら削除
+            delete_large: Trueなら大きいドキュメントを削除
+        Returns: 処理結果
+        """
+        global_settings = GlobalSettings()
+        if not collection_name or collection_name == "None":
+            collection_name = str(global_settings.get_setting("default_collection.name"))
+        max_length_val = max_length if max_length is not None else global_settings.get_setting("cleanup.max_length", 10000)
+        max_length_val = int(max_length_val)
+        return chroma_cleanup_large_documents_impl(
+            manager=manager,
+            collection_name=collection_name,
+            max_length=max_length_val,
+            split_large=split_large,
+            delete_large=delete_large
+        )
+    # --- エラーログ自動確認・サマリー出力機能を追加 ---
+    def print_latest_learning_errors(log_path:str, max_lines:int=10):
+        try:
+            if not os.path.exists(log_path):
+                print(f"[log] learning_error.log not found: {log_path}")
+                return
+            with open(log_path, 'r', encoding='utf-8') as f:
+                lines = f.readlines()[-max_lines:]
+            print("\n[learning_error.log 最新エラーサマリー]")
+            for line in lines:
+                try:
+                    entry = json.loads(line)
+                    ts = entry.get('timestamp', '')
+                    reason = entry.get('reason') or entry.get('error')
+                    value = entry.get('value', '')
+                    print(f"- {ts} | {reason} | {str(value)[:60]}")
+                except Exception:
+                    print(line.strip())
+        except Exception as e:
+            print(f"[log] learning_error.log 読み込み失敗: {e}")
+
+    # 学習処理
+    if not manager.initialized:
+        manager.initialize()
+
+    # 学習前に最新エラーログを自動表示
+    print_latest_learning_errors(
+        os.path.join('logs', 'learning_error_logs', 'learning_error.log'),
+        max_lines=10
+    )
+
+__all__ = [
+    'chroma_store_file',
+    # ...他に外部公開したい関数があればここに追加...
+]

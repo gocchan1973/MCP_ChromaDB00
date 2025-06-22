@@ -46,8 +46,8 @@ class ChromaDBManager:
         self.collections = {}
         self.initialized = False
 
-    async def initialize(self):
-        """ChromaDB初期化"""
+    def initialize(self):
+        """ChromaDB初期化（同期版）"""
         if not CHROMADB_AVAILABLE:
             log_to_file("ChromaDB is not available", "ERROR")
             return False
@@ -176,3 +176,7 @@ class ChromaDBManager:
         except Exception as e:
             log_to_file(f"Server initialization error: {e}", "ERROR")
             return False
+
+    def safe_initialize(self):
+        """initialize()の安全ラッパー。既存呼び出し互換用"""
+        return self.initialize()

@@ -14,7 +14,12 @@ class GlobalSettings:
     def __init__(self):
         """設定を初期化"""
         self._config_file = Path(__file__).parent / "config.json"
+        self.config_path = str(self._config_file.resolve())  # 追加: 絶対パスを属性に
+        print(f"[GlobalSettings.__init__] 設定ファイル絶対パス: {self.config_path}")
         self._settings = self._load_default_settings()
+        # ここで必ず設定ファイルを反映
+        if self._config_file.exists():
+            self.load_from_file()
         
     def _get_dynamic_database_path(self) -> str:
         """動的データベースパス取得（推測処理除去）"""
@@ -100,7 +105,9 @@ class GlobalSettings:
                 "format": "%(asctime)s - %(name)s - %(levelname)s - %(message)s",
                 "file_enabled": True,
                 "console_enabled": True
-            }
+            },
+            # context_keywordsも必ず空リストで初期化
+            "context_keywords": []
         }
     
     def get_tool_name(self, base_name: str) -> str:
@@ -192,8 +199,14 @@ class GlobalSettings:
         try:
             for key in keys:
                 current = current[key]
+            # context_keywords取得時は必ずprint
+            if key_path == "context_keywords":
+                print(f"[GlobalSettings.get_setting] context_keywords取得: {current}")
+                print(f"[GlobalSettings.get_setting] 参照設定ファイル: {getattr(self, 'config_path', '属性なし')}")
             return current
         except (KeyError, TypeError):
+            if key_path == "context_keywords":
+                print(f"[GlobalSettings.get_setting] context_keywords取得失敗 (None) 参照設定ファイル: {getattr(self, 'config_path', '属性なし')}")
             return default
     
     def export_config(self) -> Dict[str, Any]:
@@ -204,7 +217,8 @@ class GlobalSettings:
         """設定ファイルから読み込み（JSON）"""
         if config_path is None:
             config_path = str(self._config_file)
-        
+        self.config_path = str(Path(config_path).resolve())  # 追加: 読み込んだパスを属性に
+        print(f"[GlobalSettings.load_from_file] 設定ファイル読込: {self.config_path}")
         try:
             with open(config_path, 'r', encoding='utf-8') as f:
                 config = json.load(f)
@@ -257,6 +271,25 @@ class GlobalSettings:
         except Exception as e:
             print(f"設定検証エラー: {e}")
             return False
+    
+    def get_learning_error_log_dir(self) -> str:
+        """学習エラーログディレクトリのパスを取得（グローバル値）"""
+        # 1. 環境変数優先
+        env_path = os.getenv("LEARNING_ERROR_LOG_DIR")
+        if env_path:
+            return env_path
+        # 2. config.jsonに設定があれば取得
+        log_dir = self._settings.get("learning_error_log_dir")
+        if log_dir:
+            return log_dir
+        # 3. デフォルト値
+        return r"F:\副業\VSC_WorkSpace\MCP_ChromaDB00\logs\learning_error_logs"
+
+    @classmethod
+    def get_learning_error_log_dir_cls(cls) -> str:
+        """クラスメソッドで学習エラーログディレクトリ取得"""
+        instance = cls()
+        return instance.get_learning_error_log_dir()
 
 
 # グローバル設定インスタンス

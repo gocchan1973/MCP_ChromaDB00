@@ -6,6 +6,10 @@
 from typing import Dict, Optional, Any
 from datetime import datetime
 from config.global_settings import GlobalSettings
+import re
+import unicodedata
+import sys
+from modules.learning_logger import log_learning_error
 
 # コレクション作成確認機能
 async def confirm_collection_creation(collection_name: str, reason: str = "データ保存") -> dict:
@@ -55,6 +59,11 @@ def register_storage_tools(mcp, manager):
                     "collection_name": collection_name
                 }
         except Exception as e:
+            log_learning_error({
+                "function": "chroma_confirm_collection_creation",
+                "collection": collection_name,
+                "error": str(e)
+            })
             return {
                 "success": False,
                 "message": f"コレクション作成エラー: {str(e)}",
@@ -98,11 +107,26 @@ def register_storage_tools(mcp, manager):
                 "message": "Text stored successfully"
             }            
         except Exception as e:
+            log_learning_error({
+                "function": "chroma_store_text",
+                "collection": collection_name,
+                "error": str(e),
+                "params": {"text_len": len(text) if text else 0}
+            })
             return {"success": False, "message": f"Storage error: {str(e)}"}
     
     @mcp.tool()
     async def chroma_store_pdf(file_path: str, metadata: Optional[dict] = None, collection_name: Optional[str] = None) -> dict:
         """PDFファイルを読み込んでChromaDBに保存"""
+        def sanitize_text(text: str) -> str:
+            # Unicode正規化
+            text = unicodedata.normalize('NFKC', text)
+            # 制御文字・不可視文字の除去
+            text = re.sub(r'[\x00-\x1F\x7F-\x9F]', '', text)
+            # 連続空白・改行の整理
+            text = re.sub(r'\s+', ' ', text)
+            return text.strip()
+        
         if not manager.initialized:
             await manager.initialize()        # グローバル設定からデフォルトコレクション名を取得
         if collection_name is None:
@@ -116,14 +140,31 @@ def register_storage_tools(mcp, manager):
             pdf_path = Path(file_path)
             if not pdf_path.exists():
                 return {"success": False, "message": f"File not found: {file_path}"}
-            
+            # コレクション存在チェック（ここを追加）
+            if collection_name not in manager.collections:
+                return {
+                    "success": False,
+                    "message": f"コレクション '{collection_name}' は存在しません。新規作成は禁止されています。"
+                }
+            collection = manager.collections[collection_name]
+
             # PDF読み込み
             with open(pdf_path, 'rb') as file:
                 reader = PyPDF2.PdfReader(file)
                 text_content = ""
-                
                 for page_num, page in enumerate(reader.pages):
-                    text_content += f"[Page {page_num + 1}]\n{page.extract_text()}\n\n"
+                    try:
+                        page_text = page.extract_text()
+                        if page_text is None:
+                            print(f"[WARN] Page {page_num+1}: extract_text() returned None", file=sys.stderr)
+                            continue
+                        print(f"[DEBUG] Page {page_num+1} raw text (first 100 chars): {page_text[:100]}", file=sys.stderr)
+                        sanitized = sanitize_text(page_text)
+                        print(f"[DEBUG] Page {page_num+1} sanitized text (first 100 chars): {sanitized[:100]}", file=sys.stderr)
+                        text_content += f"[Page {page_num+1}]\n{sanitized}\n\n"
+                    except Exception as e:
+                        print(f"[ERROR] Page {page_num+1} parse error: {e}", file=sys.stderr)
+                print(f"[DEBUG] 全ページ結合テキスト長: {len(text_content)} 先頭200文字: {text_content[:200]}", file=sys.stderr)
             
             # メタデータ設定
             if metadata is None:
@@ -143,6 +184,7 @@ def register_storage_tools(mcp, manager):
             
             # ドキュメント追加
             doc_id = f"pdf_{pdf_path.stem}_{datetime.now().strftime('%Y%m%d_%H%M%S_%f')}"
+            print(f"[DEBUG] collection.add: doc_id={doc_id}, text_length={len(text_content)}, metadata={metadata}", file=sys.stderr)
             collection.add(
                 documents=[text_content],
                 metadatas=[metadata],
@@ -160,6 +202,12 @@ def register_storage_tools(mcp, manager):
         except ImportError:
             return {"success": False, "message": "PyPDF2 not installed. Run: pip install PyPDF2"}
         except Exception as e:
+            log_learning_error({
+                "function": "chroma_store_pdf",
+                "collection": collection_name,
+                "file": file_path,
+                "error": str(e)
+            })
             return {"success": False, "message": f"PDF processing error: {str(e)}"}
     
     @mcp.tool()
@@ -238,6 +286,12 @@ def register_storage_tools(mcp, manager):
             }
             
         except Exception as e:
+            log_learning_error({
+                "function": "chroma_store_directory_files",
+                "collection": collection_name,
+                "directory": directory_path,
+                "error": str(e)
+            })
             return {"success": False, "message": f"Directory processing error: {str(e)}"}
     
     @mcp.tool()

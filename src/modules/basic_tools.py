@@ -16,7 +16,7 @@ def register_basic_tools(mcp, manager):
     async def chroma_stats() -> dict:
         """ChromaDB統計情報を取得"""
         if not manager.initialized:
-            await manager.initialize()
+            manager.initialize()
         
         stats_data = {
             "server_status": "running",
@@ -54,7 +54,7 @@ def register_basic_tools(mcp, manager):
     async def chroma_list_collections() -> dict:
         """全コレクション一覧を取得"""
         if not manager.initialized:
-            await manager.initialize()
+            manager.initialize()
         
         try:
             collections = manager.chroma_client.list_collections()
@@ -81,7 +81,7 @@ def register_basic_tools(mcp, manager):
     async def chroma_health_check() -> dict:
         """システムヘルスチェック"""
         if not manager.initialized:
-            await manager.initialize()
+            manager.initialize()
         
         try:
             # 基本接続テスト

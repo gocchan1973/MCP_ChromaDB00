@@ -6,6 +6,7 @@
 from typing import Dict, Optional, Any
 from datetime import datetime
 from config.global_settings import GlobalSettings
+from modules.learning_logger import log_learning_error
 
 def register_data_tools(mcp, manager):
     """データツールを登録"""    
@@ -75,6 +76,13 @@ def register_data_tools(mcp, manager):
                 return {"success": False, "message": f"Unsupported format: {format}"}
                 
         except Exception as e:
+            log_learning_error({
+                "function": "chroma_import_data",
+                "file": file_path,
+                "collection": collection_name,
+                "error": str(e),
+                "params": {"format": format}
+            })
             return {"success": False, "message": f"Error importing data: {str(e)}"}
     
     @mcp.tool()
@@ -146,6 +154,12 @@ def register_data_tools(mcp, manager):
                 return {"success": False, "message": "ChromaDB client not initialized"}
                 
         except Exception as e:
+            log_learning_error({
+                "function": "chroma_export_data",
+                "collection": collection_name,
+                "error": str(e),
+                "params": {"output_format": output_format, "file_path": file_path}
+            })
             return {"success": False, "message": f"Error exporting data: {str(e)}"}
     
     @mcp.tool()
@@ -181,6 +195,12 @@ def register_data_tools(mcp, manager):
                 return {"success": False, "message": "ChromaDB client not initialized"}
                 
         except Exception as e:
+            log_learning_error({
+                "function": "chroma_delete_documents",
+                "collection": collection_name,
+                "error": str(e),
+                "params": {"ids": ids, "where": where}
+            })
             return {"success": False, "message": f"Error deleting documents: {str(e)}"}
     
     @mcp.tool()
@@ -212,4 +232,10 @@ def register_data_tools(mcp, manager):
                 return {"success": False, "message": "ChromaDB client not initialized"}
                 
         except Exception as e:
+            log_learning_error({
+                "function": "chroma_upsert_documents",
+                "collection": collection_name,
+                "error": str(e),
+                "params": {"doc_count": len(documents) if documents else 0}
+            })
             return {"success": False, "message": f"Error upserting documents: {str(e)}"}
