@@ -519,7 +519,7 @@ pip install -r requirements.txt  # 再インストール
 - **エンタープライズ対応**: 高可用性・災害復旧・グローバル展開
 
 
-#### ⚠️ 解決してきた課題
+#### ⚠️ 以下、解決してきた課題
 
 ✅ **完全修正済み**
 #### 1. **コレクション破損・自動増殖問題**
@@ -527,7 +527,6 @@ pip install -r requirements.txt  # 再インストール
 - **現象**: データ不整合、アクセス不能、コレクション増殖
 - **影響**: 一部ツールでエラー発生、データ損失リスク
 
-✅ **完全修正済み**
 #### 2. **MCPツール環境でのNumPy配列バグ** 
 - **問題**: MCPサーバー環境でNumPy配列の真偽値判定が失敗
 - **現象**: ベクトル分析ツールで "ambiguous" エラー発生  
@@ -540,9 +539,8 @@ pip install -r requirements.txt  # 再インストール
 
 #### 4. **ツール間連携の不安定性**
 - **問題**: 43ツールの一部で連携時の不具合
-- **コレクション自動増殖**: 異常な条件下でコレクションが勝手に増える
-　　（プログラムバグ修正・管理強化により解決）
-- **データ不整合**: 運用ミスによるメタデータとドキュメントの整合性問題
+- **コレクション自動増殖バグ**: 異常な条件下でコレクションが勝手に増える
+- **データ不整合バグ**: 運用ミスによるメタデータとドキュメントの整合性問題
 　　（自動整合性チェック・修復機能で解決）
 
 #### **即座解決可能だった改善策**
@@ -551,16 +549,6 @@ pip install -r requirements.txt  # 再インストール
 # collection_inspection.py の SafeEmbeddingAnalyzer クラスで
 # NumPy配列を一切使用しない安全なエンベディング分析を実装済み
 
-# 2. ChromaDBの安定稼働環境構築
-docker run -d --name chromadb-stable \
-  -p 8000:8000 \
-  -v chroma-data:/chroma/chroma \
-  chromadb/chroma:latest
-
-# 3. 定期監視スクリプト設定
-@chroma_health_check     # 毎時実行
-@chroma_backup_data      # 毎日実行
-@chroma_system_maintenance  # 週次実行
 ```
 
 ### 🛠️ **具体的な根本解決策**
@@ -587,7 +575,7 @@ class SafeEmbeddingAnalyzer:
 - **Weaviate**: GraphQL API、スケーラブル
 - **Pinecone**: クラウドネイティブ、管理不要
 
-#### **3. ハイブリッド構成**
+#### **3. ハイブリッド構成予定構想**
 ```python
 # 用途別DB使い分け
 config = {
