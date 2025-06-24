@@ -42,6 +42,9 @@ config/secret*.yaml
 config/private*.yaml
 *.env
 
+docs_Ahrcive/
+dos_This_Spec/
+
 # データベースファイル
 *.db
 *.sqlite3
