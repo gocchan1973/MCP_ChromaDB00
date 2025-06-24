@@ -1,11 +1,103 @@
-# ChromaDB MCP Server - モジュール分割アーキテクチャ (53+ツール)
-> **🚀 2025年6月19日最新 - 完全モジュール分割・53+ツール実装完了**
+# ChromaDB MCP Server - モジュール分割アーキテクチャ (58ツール)
+> **🚀 2025年6月19日最新 - 完全モジュール分割・58ツール実装完了**
 
 ## 🎯 プロジェクト概要
 
-**MCP_ChromaDB00**は、Model Context Protocol (MCP) とChromaDBベクトルデータベースを統合した**53+ツール・14モジュール**の高性能管理システムです。元905行の巨大ファイルを12の専門モジュールに分割し、保守性・拡張性・性能を大幅に向上させました。
+**MCP_ChromaDB00**は、Model Context Protocol (MCP) とChromaDBベクトルデータベースを統合した**58ツール・19モジュール**の高性能管理システムです。19の専門モジュールに分割し、保守性・拡張性・性能を大幅に向上させました。
 
-## ✨ 最新実装状況【2025年6月19日完了】
+## ✨ 最新実装状況【2025年6月24日完了】
+## 🛠️ 全ツール機能一覧【最新版・58ツール・19モジュール】
+
+### system_tools.py
+- 01 chroma_get_server_info: サーバー情報取得
+- 02 chroma_reset_server: サーバーリセット
+- 03 chroma_backup_collection: コレクションバックアップ
+- 04 chroma_restore_collection: コレクション復元
+
+### storage_tools.py
+- 05 chroma_confirm_collection_creation: コレクション作成承認
+- 06 chroma_store_text: テキスト保存
+- 07 chroma_store_pdf: PDF保存
+- 08 chroma_store_directory_files: ディレクトリ一括学習
+- 09 chroma_check_pdf_support: PDFサポート確認
+- 10 chroma_flexible_search: 柔軟な条件検索
+- 11 chroma_extract_user_names_by_date_time: 日付・時刻で名前抽出
+- 12 chroma_user_names_stats: 名前統計
+
+### search_tools.py
+- 13 chroma_search_text: テキスト検索
+- 14 chroma_search_filtered: フィルター付き検索
+
+### search_and_delete_tools.py
+- 15 chroma_search_and_delete_by_keyword: 部分一致検索＋一括削除
+- 16 chroma_cleanup_non_str_ids: ID型不整合ドキュメント一括削除
+
+### monitoring_tools.py
+- 17 chroma_system_diagnostics: システム診断・トラブルシューティング
+- 18 chroma_process_status: プロセス状況確認
+- 19 chroma_safe_gentle_startup: 安全なChromaDB起動
+- 20 chroma_prevent_collection_proliferation: コレクション増殖防止チェック
+- 21 chroma_show_default_settings: デフォルト設定表示
+
+### management_tools.py
+- 22 chroma_create_collection: コレクション作成
+- 23 chroma_delete_collection: コレクション削除
+- 24 chroma_add_documents: ドキュメント一括追加
+- 25 chroma_get_documents: ドキュメント取得
+- 26 chroma_collection_stats: コレクション統計情報
+- 27 chroma_merge_collections: コレクション統合
+
+### learning_tools.py
+- 28 chroma_store_html: HTML→Markdown変換＋学習
+- 29 chroma_store_html_folder: HTMLフォルダ一括学習
+- 30 chroma_store_file_tool: 一般ファイル学習
+- 31 chroma_conversation_capture: 会話データキャプチャ
+- 32 chroma_discover_history: 過去履歴発見・学習
+- 33 chroma_extract_important_html_dynamic: HTML重要キーワード・文脈抽出
+- 34 chroma_search_text_deep: 深掘り文脈検索
+- 35 chroma_cleanup_documents: 空・大きいドキュメントのクリーンアップ
+- 36 chroma_cleanup_large_documents: 極端に大きいドキュメントの分割/削除
+- 37 chroma_store_html_md_unified: HTML一括→md会話chunker学習
+
+### integrity_tools.py
+- 38 chroma_integrity_validate_large_dataset: 大規模データセット検証
+- 39 chroma_analyze_embeddings_safe: NumPyバグ回避エンベディング分析
+- 40 chroma_safe_operation_wrapper: 安全な操作実行ラッパー
+- 41 chroma_confirm_execution: 操作実行前確認
+
+### inspection_tools.py
+- 42 chroma_inspect_collection_comprehensive: コレクション包括的精査
+- 43 chroma_inspect_document_details: ドキュメント詳細精査
+- 44 chroma_inspect_metadata_schema: メタデータスキーマ分析
+- 45 chroma_inspect_vector_space: ベクトル空間詳細分析
+- 46 chroma_inspect_data_integrity: データ整合性包括チェック
+
+### analysis_tools.py
+- 47 chroma_similarity_search: 類似度検索
+- 48 chroma_analyze_collection: コレクション分析
+
+### backup_tools.py
+- 49 chroma_backup_data: データバックアップ作成
+- 50 chroma_restore_data: バックアップからデータ復元
+- 51 chroma_cleanup_duplicates: 重複ドキュメントクリーンアップ
+- 52 chroma_system_maintenance: システム全体メンテナンス
+
+### data_tools.py
+- 53 chroma_import_data: データインポート
+- 54 chroma_export_data: データエクスポート
+- 55 chroma_delete_documents: ドキュメント削除
+- 56 chroma_upsert_documents: ドキュメントアップサート
+
+### extraction_tools.py
+- 57 chroma_extract_by_filter: メタデータフィルターによるデータ抽出
+- 58 chroma_extract_by_date_range: 日付範囲によるデータ抽出
+
+---
+
+（この一覧はsrc/modules/配下の全モジュールから@mcptoolデコレータで厳密抽出・分類した最新版です）
+
+---
+## ✨ 実装状況【2025年6月19日完了】
 
 - **🎯 53+ツール完全実装**: 目標51ツールを超える包括的機能セット
 - **🏗️ モジュール分割アーキテクチャ**: 905行→45行メイン+12専門モジュール
@@ -100,97 +192,7 @@ manager.comprehensive_wellness_program()
 | **バグ修正率** | 100% | ✅ 継続的改善 |
 | **アーキテクチャ** | モジュラー | ✅ 保守性向上 |
 
-## 🛠️ 全ツール機能一覧【最新版・58ツール・19モジュール】
 
-### system_tools.py
-- 01 chroma_get_server_info: サーバー情報取得
-- 02 chroma_reset_server: サーバーリセット
-- 03 chroma_backup_collection: コレクションバックアップ
-- 04 chroma_restore_collection: コレクション復元
-
-### storage_tools.py
-- 05 chroma_confirm_collection_creation: コレクション作成承認
-- 06 chroma_store_text: テキスト保存
-- 07 chroma_store_pdf: PDF保存
-- 08 chroma_store_directory_files: ディレクトリ一括学習
-- 09 chroma_check_pdf_support: PDFサポート確認
-- 10 chroma_flexible_search: 柔軟な条件検索
-- 11 chroma_extract_user_names_by_date_time: 日付・時刻で名前抽出
-- 12 chroma_user_names_stats: 名前統計
-
-### search_tools.py
-- 13 chroma_search_text: テキスト検索
-- 14 chroma_search_filtered: フィルター付き検索
-
-### search_and_delete_tools.py
-- 15 chroma_search_and_delete_by_keyword: 部分一致検索＋一括削除
-- 16 chroma_cleanup_non_str_ids: ID型不整合ドキュメント一括削除
-
-### monitoring_tools.py
-- 17 chroma_system_diagnostics: システム診断・トラブルシューティング
-- 18 chroma_process_status: プロセス状況確認
-- 19 chroma_safe_gentle_startup: 安全なChromaDB起動
-- 20 chroma_prevent_collection_proliferation: コレクション増殖防止チェック
-- 21 chroma_show_default_settings: デフォルト設定表示
-
-### management_tools.py
-- 22 chroma_create_collection: コレクション作成
-- 23 chroma_delete_collection: コレクション削除
-- 24 chroma_add_documents: ドキュメント一括追加
-- 25 chroma_get_documents: ドキュメント取得
-- 26 chroma_collection_stats: コレクション統計情報
-- 27 chroma_merge_collections: コレクション統合
-
-### learning_tools.py
-- 28 chroma_store_html: HTML→Markdown変換＋学習
-- 29 chroma_store_html_folder: HTMLフォルダ一括学習
-- 30 chroma_store_file_tool: 一般ファイル学習
-- 31 chroma_conversation_capture: 会話データキャプチャ
-- 32 chroma_discover_history: 過去履歴発見・学習
-- 33 chroma_extract_important_html_dynamic: HTML重要キーワード・文脈抽出
-- 34 chroma_search_text_deep: 深掘り文脈検索
-- 35 chroma_cleanup_documents: 空・大きいドキュメントのクリーンアップ
-- 36 chroma_cleanup_large_documents: 極端に大きいドキュメントの分割/削除
-- 37 chroma_store_html_md_unified: HTML一括→md会話chunker学習
-
-### integrity_tools.py
-- 38 chroma_integrity_validate_large_dataset: 大規模データセット検証
-- 39 chroma_analyze_embeddings_safe: NumPyバグ回避エンベディング分析
-- 40 chroma_safe_operation_wrapper: 安全な操作実行ラッパー
-- 41 chroma_confirm_execution: 操作実行前確認
-
-### inspection_tools.py
-- 42 chroma_inspect_collection_comprehensive: コレクション包括的精査
-- 43 chroma_inspect_document_details: ドキュメント詳細精査
-- 44 chroma_inspect_metadata_schema: メタデータスキーマ分析
-- 45 chroma_inspect_vector_space: ベクトル空間詳細分析
-- 46 chroma_inspect_data_integrity: データ整合性包括チェック
-
-### analysis_tools.py
-- 47 chroma_similarity_search: 類似度検索
-- 48 chroma_analyze_collection: コレクション分析
-
-### backup_tools.py
-- 49 chroma_backup_data: データバックアップ作成
-- 50 chroma_restore_data: バックアップからデータ復元
-- 51 chroma_cleanup_duplicates: 重複ドキュメントクリーンアップ
-- 52 chroma_system_maintenance: システム全体メンテナンス
-
-### data_tools.py
-- 53 chroma_import_data: データインポート
-- 54 chroma_export_data: データエクスポート
-- 55 chroma_delete_documents: ドキュメント削除
-- 56 chroma_upsert_documents: ドキュメントアップサート
-
-### extraction_tools.py
-- 57 chroma_extract_by_filter: メタデータフィルターによるデータ抽出
-- 58 chroma_extract_by_date_range: 日付範囲によるデータ抽出
-
----
-
-（この一覧はsrc/modules/配下の全モジュールから@mcptoolデコレータで厳密抽出・分類した最新版です）
-
----
 
 ## 🌍 **今後の展開予定**
 
