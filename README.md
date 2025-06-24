@@ -100,105 +100,104 @@ manager.comprehensive_wellness_program()
 | **バグ修正率** | 100% | ✅ 継続的改善 |
 | **アーキテクチャ** | モジュラー | ✅ 保守性向上 |
 
-## 🛠️ 43ツール一覧【実装完了】
+## 🛠️ 全ツール機能一覧【最新版・58ツール・19モジュール】
 
-### **🔵 基盤システム (21ツール)**
+### system_tools.py
+- 01 chroma_get_server_info: サーバー情報取得
+- 02 chroma_reset_server: サーバーリセット
+- 03 chroma_backup_collection: コレクションバックアップ
+- 04 chroma_restore_collection: コレクション復元
 
-### 1. 監視・システム管理 (3ツール)
-- `chroma_health_check` - ヘルスチェック
-- `chroma_stats` - 統計情報取得
-- `chroma_get_server_info` - サーバー情報取得
+### storage_tools.py
+- 05 chroma_confirm_collection_creation: コレクション作成承認
+- 06 chroma_store_text: テキスト保存
+- 07 chroma_store_pdf: PDF保存
+- 08 chroma_store_directory_files: ディレクトリ一括学習
+- 09 chroma_check_pdf_support: PDFサポート確認
+- 10 chroma_flexible_search: 柔軟な条件検索
+- 11 chroma_extract_user_names_by_date_time: 日付・時刻で名前抽出
+- 12 chroma_user_names_stats: 名前統計
 
-### 2. 基本データ操作 (4ツール)
-- `chroma_search_text` - テキスト検索（基本版）
-- `chroma_store_text` - テキスト保存（基本版）
-- `chroma_search_advanced` - 高度な検索機能
-- `chroma_search_filtered` - フィルター付き検索
+### search_tools.py
+- 13 chroma_search_text: テキスト検索
+- 14 chroma_search_filtered: フィルター付き検索
 
-### 3. コレクション管理 (5ツール)
-- `chroma_list_collections` - コレクション一覧取得
-- `chroma_delete_collection` - コレクション削除
-- `chroma_collection_stats` - コレクション統計情報
-- `chroma_merge_collections` - コレクション統合
-- `chroma_duplicate_collection` - コレクション複製
+### search_and_delete_tools.py
+- 15 chroma_search_and_delete_by_keyword: 部分一致検索＋一括削除
+- 16 chroma_cleanup_non_str_ids: ID型不整合ドキュメント一括削除
 
-### 4. 履歴・会話キャプチャ (3ツール)
-- `chroma_conversation_capture` - 会話キャプチャと学習用保存
-- `chroma_discover_history` - 過去履歴の発見と学習
-- `chroma_conversation_auto_capture` - 自動会話キャプチャ設定
+### monitoring_tools.py
+- 17 chroma_system_diagnostics: システム診断・トラブルシューティング
+- 18 chroma_process_status: プロセス状況確認
+- 19 chroma_safe_gentle_startup: 安全なChromaDB起動
+- 20 chroma_prevent_collection_proliferation: コレクション増殖防止チェック
+- 21 chroma_show_default_settings: デフォルト設定表示
 
-### 5. 分析・最適化 (3ツール)
-- `chroma_analyze_patterns` - データパターン分析
-- `chroma_optimize_search` - 検索パフォーマンス最適化
-- `chroma_quality_check` - データ品質チェックと改善提案
+### management_tools.py
+- 22 chroma_create_collection: コレクション作成
+- 23 chroma_delete_collection: コレクション削除
+- 24 chroma_add_documents: ドキュメント一括追加
+- 25 chroma_get_documents: ドキュメント取得
+- 26 chroma_collection_stats: コレクション統計情報
+- 27 chroma_merge_collections: コレクション統合
 
-### 6. バックアップ・メンテナンス (3ツール)
-- `chroma_backup_data` - データバックアップ作成
-- `chroma_restore_data` - バックアップからデータ復元
-- `chroma_cleanup_duplicates` - 重複ドキュメントクリーンアップ
+### learning_tools.py
+- 28 chroma_store_html: HTML→Markdown変換＋学習
+- 29 chroma_store_html_folder: HTMLフォルダ一括学習
+- 30 chroma_store_file_tool: 一般ファイル学習
+- 31 chroma_conversation_capture: 会話データキャプチャ
+- 32 chroma_discover_history: 過去履歴発見・学習
+- 33 chroma_extract_important_html_dynamic: HTML重要キーワード・文脈抽出
+- 34 chroma_search_text_deep: 深掘り文脈検索
+- 35 chroma_cleanup_documents: 空・大きいドキュメントのクリーンアップ
+- 36 chroma_cleanup_large_documents: 極端に大きいドキュメントの分割/削除
+- 37 chroma_store_html_md_unified: HTML一括→md会話chunker学習
 
-### **🔴 BB7拡張システム (22ツール)**
+### integrity_tools.py
+- 38 chroma_integrity_validate_large_dataset: 大規模データセット検証
+- 39 chroma_analyze_embeddings_safe: NumPyバグ回避エンベディング分析
+- 40 chroma_safe_operation_wrapper: 安全な操作実行ラッパー
+- 41 chroma_confirm_execution: 操作実行前確認
 
-### 7. データ整合性管理 - Advanced Security (4ツール)
-- `bb7_chroma_integrity_detect_duplicates_advanced` - 高度重複検出システム
-- `bb7_chroma_integrity_monitor_realtime` - リアルタイム整合性監視
-- `bb7_chroma_integrity_optimize_for_scale` - スケール対応パフォーマンス最適化
-- `bb7_chroma_integrity_validate_large_dataset` - 大規模データセット検証
+### inspection_tools.py
+- 42 chroma_inspect_collection_comprehensive: コレクション包括的精査
+- 43 chroma_inspect_document_details: ドキュメント詳細精査
+- 44 chroma_inspect_metadata_schema: メタデータスキーマ分析
+- 45 chroma_inspect_vector_space: ベクトル空間詳細分析
+- 46 chroma_inspect_data_integrity: データ整合性包括チェック
 
-### 8. 学習・データ取込 (4ツール)
-- `bb7_chroma_store_directory_files` - ディレクトリ一括学習
-- `bb7_chroma_store_pdf` - PDF学習システム
-- `bb8_chroma_store_html` - HTML学習システム
-- `bb8_chroma_store_html_folder` - HTMLフォルダ一括学習
+### analysis_tools.py
+- 47 chroma_similarity_search: 類似度検索
+- 48 chroma_analyze_collection: コレクション分析
 
-### 9. コレクション精査・検査 (5ツール)
-- `chroma_inspect_collection_comprehensive` - 包括的コレクション精査
-- `chroma_inspect_document_details` - ドキュメント詳細検査
-- `chroma_inspect_metadata_schema` - メタデータスキーマ分析
-- `chroma_inspect_vector_space` - ベクトル空間詳細分析
-- `chroma_inspect_data_integrity` - データ整合性包括チェック
+### backup_tools.py
+- 49 chroma_backup_data: データバックアップ作成
+- 50 chroma_restore_data: バックアップからデータ復元
+- 51 chroma_cleanup_duplicates: 重複ドキュメントクリーンアップ
+- 52 chroma_system_maintenance: システム全体メンテナンス
 
-### 10. 確認・安全実行 (3ツール)
-- `chroma_confirm_execution` - 操作実行前確認
-- `chroma_safe_operation_wrapper` - 安全な操作実行ラッパー
-- `chroma_prevent_collection_proliferation` - コレクション増殖防止
+### data_tools.py
+- 53 chroma_import_data: データインポート
+- 54 chroma_export_data: データエクスポート
+- 55 chroma_delete_documents: ドキュメント削除
+- 56 chroma_upsert_documents: ドキュメントアップサート
 
-### 11. システム運用・監視 (4ツール)
-- `chroma_system_diagnostics` - システム診断
-- `chroma_system_maintenance` - システムメンテナンス
-- `chroma_server_info` - 総合サーバー情報
-- `chroma_show_default_settings` - デフォルト設定表示
+### extraction_tools.py
+- 57 chroma_extract_by_filter: メタデータフィルターによるデータ抽出
+- 58 chroma_extract_by_date_range: 日付範囲によるデータ抽出
 
-### 12. その他・デバッグ (2ツール)
-- `debug_tool_name_test` - ツール名プレフィックステスト
-- `chroma_extract_by_*` - データ抽出ツール群
+---
 
-## 🏗️ システム構成【43ツール実装】
+（この一覧はsrc/modules/配下の全モジュールから@mcptoolデコレータで厳密抽出・分類した最新版です）
 
-```
-ChromaDB Management System
-├── VS Code MCP Integration ←→ FastMCP Server (43 Tools) ←→ ChromaDB Engine
-│   (統合環境)                    (12カテゴリ体系)           (ベクトルDB)
-│                                                               ↕
-├── GitHub Copilot ←→ モジュラーツール群 ←→ 実稼働データ ←→ IrukaWorkspace
-│   (AI統合)           (機能別分類)        (複数コレクション)  (共有環境)
-│                                                               ↕
-└── Monitoring Tools ←→ Backup System ←→ Data Management ←→ Settings
-    (監視機能)           (バックアップ)     (データ管理)        (設定管理)
-```
-
-### 🎯 **主な特徴**
-- **43ツール・12カテゴリ**: 包括的なChromaDB管理機能
-- **運用支援**: リアルタイム監視・自動復旧・品質管理
-- **VS Code統合**: MCP経由でのシームレス操作
-- **安定性**: 継続的な稼働実績
+---
 
 ## 🌍 **今後の展開予定**
 
 ### 🎯 **プロジェクトの特徴**
 このシステムは、ChromaDB管理ツールとして以下の特徴を持っています：
 
-- **✅ 43ツール・12カテゴリ**: 幅広い機能をカバー
+- **✅ 58ツール・12カテゴリ**: 幅広い機能をカバー
 - **✅ 実用的な機能**: 実際のプロジェクトで使用可能なレベル
 - **✅ 継続的な稼働**: 実際のデータで動作確認済み
 - **✅ オープンソース**: GitHubで管理・公開準備中
@@ -220,7 +219,7 @@ Phase 2: コミュニティ展開
 ### � **Global Uniqueness**
 このシステムはディープサーチの結果、**包括的ChromaDB管理プラットフォーム**として稀有な実装です：
 
-- **✅ 43ツール・12カテゴリ**: 他に類を見ない包括性
+- **✅ 58ツール・12カテゴリ**: 他に類を見ない包括性
 - **✅ Enterprise-level機能**: 商用レベルの監視・バックアップ・修復
 - **✅ 実証済み安定性**: 実際のプロジェクトで100%稼働率
 - **✅ オープンソース**: 誰でも利用可能な完全なシステム
@@ -322,48 +321,53 @@ VS Code `settings.json` に以下を追加:
 ## 📁 プロジェクト構造【完全実装版】
 
 ```
-MCP_ChromaDB00/                     ← 25ツール完全実装プロジェクト
+MCP_ChromaDB00/                     ← 最新58ツール・19モジュール体制
 ├── src/
-│   ├── main_complete.py            ← メインサーバー (369行・完全版)
+│   ├── main_complete.py            ← メインサーバー
+│   ├── modules/                    ← 全APIモジュール（19個）
+│   │   ├── system_tools.py         ← サーバー情報・システム系
+│   │   ├── storage_tools.py        ← ストレージ・保存
+│   │   ├── search_tools.py         ← テキスト検索
+│   │   ├── search_and_delete_tools.py ← 検索＋一括削除
+│   │   ├── monitoring_tools.py     ← 監視・診断
+│   │   ├── management_tools.py     ← コレクション管理
+│   │   ├── learning_tools.py       ← 学習・HTML/Markdown
+│   │   ├── learning_logger.py      ← 学習エラーログ
+│   │   ├── integrity_tools.py      ← データ整合性
+│   │   ├── inspection_tools.py     ← コレクション精査
+│   │   ├── analysis_tools.py       ← 類似度分析
+│   │   ├── backup_tools.py         ← バックアップ
+│   │   ├── batch_md_learning.py    ← チャット特化md一括学習
+│   │   ├── chroma_store_core.py    ← ファイル学習コア
+│   │   ├── core_manager.py         ← コア管理
+│   │   ├── data_tools.py           ← データ入出力
+│   │   ├── extraction_tools.py     ← データ抽出
+│   │   └── html_learning.py        ← HTML学習
 │   ├── config/
-│   │   ├── global_settings.py     ← グローバル設定管理
+│   │   ├── global_settings.py      ← グローバル設定
 │   │   └── config.json             ← 設定ファイル
 │   ├── utils/
-│   │   └── config_helper.py        ← 設定ヘルパー関数
-│   └── tools/                      ← 25ツール実装
-│       ├── monitoring.py           ← 監視・システム管理（5ツール）
-│       ├── basic_operations.py     ← 基本データ操作（4ツール）
-│       ├── collection_management.py ← コレクション管理（5ツール）
-│       ├── history_conversation.py ← 履歴・会話（3ツール）
-│       ├── analytics_optimization.py ← 分析・最適化（3ツール）
-│       ├── backup_maintenance.py   ← バックアップ・保守（4ツール）
-│       └── storage.py              ← デバッグ（1ツール）
-├── tests/                          ← テストスイート
-│   ├── test_data.csv              ← 移動済み
-│   └── test_mcp_client_enhanced.py ← 移動済み
-├── utils/                          ← ユーティリティ
-│   ├── get_chromadb_stats.py      ← 移動済み
-│   └── tool_test_instruction.py    ← 移動済み
-├── docs/                           ← 日本語文書群
-│   ├── プロジェクト完了報告書.md
-│   ├── BB7プレフィックス削除完了レポート.md
-│   ├── ツール数検証レポート.md
-│   └── 最終システム状況レポート.md
+│   │   └── config_helper.py        ← 設定ヘルパー
+│   └── tools/                      ← 旧ツール群（参考・一部移行済み）
+├── docs/                           ← 技術・運用ドキュメント
 ├── logs/                           ← システムログ
-├── config/                         ← 設定ファイル群
-├── mcp.json                        ← MCP設定 (v1.0.0)
-├── requirements.txt                ← 17パッケージ依存関係
-├── launch_server.bat              ← 起動スクリプト
-└── README.md                      ← 本ファイル
+├── scripts/                        ← 補助スクリプト
+├── tools/                          ← 補助ツール
+├── utils/                          ← ユーティリティ
+├── mcp.json                        ← MCP設定
+├── requirements.txt                ← 依存パッケージ
+├── launch_server.bat               ← 起動スクリプト
+├── setup-project.ps1               ← 初期セットアップ
+└── README.md                       ← 本ファイル
 ```
 
 ## 🌍 グローバル化・共有データベース
 
 ### 共有データベース環境
-- **統一パス**: `./VSC_WorkSpace/shared_Chromadb/chromadb_data`
+- **統一パス**: `../shared_Chromadb/chromadb_data`
 - **現在のデータ**: 767ドキュメント（sister_chat_history）
 - **データサイズ**: 33.8MB実運用データ
-- **プロジェクト統合**: MySisterDB、IrukaProjectII、MCP_ChromaDB00
+- **プロジェクト統合**: MySisterDB、ProjectII、MCP_ChromaDB00
 
 ### グローバル設定システム
 - **設定外部化**: JSON設定ファイル + 環境変数サポート
@@ -451,7 +455,7 @@ pip install -r requirements.txt  # 再インストール
 ## 🎉 完成機能
 
 ### ✅ 実装完了項目
-- [x] **25ツール完全実装** (7カテゴリ分類)
+- [x] **58ツール完全実装** (カテゴリ分類)
 - [x] **モジュラーアーキテクチャ** (保守性・拡張性)
 - [x] **グローバル設定システム** (柔軟な設定管理)
 - [x] **共有データベース統合** (複数プロジェクト対応)
@@ -472,76 +476,76 @@ pip install -r requirements.txt  # 再インストール
 **🏆 ChromaDB MCP サーバー 43ツール実装プロジェクト**
 
 **完成日**: 2025年6月8日  
-**最新アップデート**: 2025年6月16日 - **NumPy配列バグ完全修正・SafeEmbeddingAnalyzer実装完了**  
+**最新アップデート**: 2025年6月16日 - 
+**NumPy配列バグ完全修正・SafeEmbeddingAnalyzer実装完了**  
 **ステータス**: ✅ **実装完了・NumPy配列バグ根本解決済み**  
 **準備状況**: 🚀 **実運用中・技術的安定性確保済み**
 
 ---
 
-## ⚠️ 現状の課題と改善予定
+#### **段階別開発スケジュール**
+```
+2025年6月: 移行戦略実装・オープンソース公開へ展開
+2025年初秋: MCP DB Hub Phase 1 (運用改善ツール)
+2025年初冬: 代替DB検証
+```
+
+## ⚠️ 現状の課題
 
 ### 🐛 **現在確認されている不具合**
+#### 🚨 **確認されている問題の分類**
 
+- **問題**: 大量データ処理時の監視精度低下
+- **現象**: アラート遅延、パフォーマンス劣化
+- **影響**: 重要な問題の見逃しリスク
+- **並行処理の脆弱性**: 複数クライアント同時アクセス時の競合状態
+- **メモリ管理**: 長時間運用時のメモリリークやリソース競合
+- **バックアップ不備**: 障害時の復旧手順が不十分(MCP DB Hubで対応可能)
+
+#### 🎯 **段階的な改善アプローチ**
+
+##### **短期対応: MCP DB Hub による運用改善** 
+- **症状緩和**: リアルタイム監視・早期発見・自動復旧
+- **予防措置**: 定期メンテナンス・バックアップ自動化
+- **運用安定化**: データ整合性チェック・コレクション管理
+
+##### **中期対応: ChromaDB本体の改善**
+- **フォーク・改修**: 次世代版となる基本設計の独自修正版開発
+- **代替DB検証**: Qdrant、Weaviate等への移行検討
+
+##### **長期対応: 次世代ベクトルDB基盤** 
+- **独自DB開発**: 根本的に安定性を重視した設計
+- **ハイブリッド構成**: 複数ベクトルDBの使い分け・冗長化
+- **エンタープライズ対応**: 高可用性・災害復旧・グローバル展開
+
+
+#### ⚠️ 解決してきた課題
+
+✅ **完全修正済み**
 #### 1. **コレクション破損・自動増殖問題**
 - **問題**: ChromaDBコレクションの予期しない破損・異常終了
 - **現象**: データ不整合、アクセス不能、コレクション増殖
 - **影響**: 一部ツールでエラー発生、データ損失リスク
 
-#### 2. **MCPツール環境でのNumPy配列バグ** ✅ **完全修正済み**
+✅ **完全修正済み**
+#### 2. **MCPツール環境でのNumPy配列バグ** 
 - **問題**: MCPサーバー環境でNumPy配列の真偽値判定が失敗
 - **現象**: ベクトル分析ツールで "ambiguous" エラー発生  
 - **解決**: **SafeEmbeddingAnalyzer実装により完全修正済み**
 - **成果**: エンベディング分析機能が安定動作、NumPy配列を一切使用しない安全実装
 
-#### 3. **ツール間連携の不安定性**
+#### 3. ChromaDB本体の設計・実装問題**
+- **NumPy配列処理のバグ**: MCPツール環境でNumPy配列真偽値判定エラー 
+- **HNSWインデックス管理**: 大量データ時のインデックス破損・復旧失敗
+
+#### 4. **ツール間連携の不安定性**
 - **問題**: 43ツールの一部で連携時の不具合
-- **現象**: バックアップ・復元時の部分失敗、監視機能の断続的エラー
-- **影響**: 運用の手動介入が必要な場合あり
+- **コレクション自動増殖**: 異常な条件下でコレクションが勝手に増える
+　　（プログラムバグ修正・管理強化により解決）
+- **データ不整合**: 運用ミスによるメタデータとドキュメントの整合性問題
+　　（自動整合性チェック・修復機能で解決）
 
-#### 4. **リアルタイム監視の限界**
-- **問題**: 大量データ処理時の監視精度低下
-- **現象**: アラート遅延、パフォーマンス劣化
-- **影響**: 重要な問題の見逃しリスク
-
-### 🔧 **現状の課題と根本的な改善アプローチ**
-
-#### 🚨 **確認されている問題の分類**
-
-##### **1. 運用レベルの問題** 
--🔄**バックアップ不備**: 障害時の復旧手順が不十分(MCP DB Hubで対応可能)
-
--✅**コレクション自動増殖**: 異常な条件下でコレクションが勝手に増える
-　　（プログラムバグ修正・管理強化により2025年6月現在、根本解決済み）
--✅**データ不整合**: 運用ミスによるメタデータとドキュメントの整合性問題
-　　（自動整合性チェック・修復機能で2025年6月現在、根本解決済み）
--✅**監視不足**: 問題の早期発見ができない
-　　（リアルタイム監視・アラート・自動復旧機能で2025年6月現在、根本解決済み）
-
-
-##### **2. ChromaDB本体の設計・実装問題** ✅ **NumPy配列バグ完全修正済み**
-- **✅ NumPy配列処理のバグ**: MCPツール環境でNumPy配列真偽値判定エラー ← **完全修正済み**
-- **🔄 並行処理の脆弱性**: 複数クライアント同時アクセス時の競合状態
-- **🔄 HNSWインデックス管理**: 大量データ時のインデックス破損・復旧失敗
-- **🔄 メモリ管理**: 長時間運用時のメモリリークやリソース競合
-
-#### 🎯 **段階的な改善アプローチ**
-
-##### **短期対応: MCP DB Hub による運用改善** (2025年6月)
-- ✅ **症状緩和**: リアルタイム監視・早期発見・自動復旧
-- ✅ **予防措置**: 定期メンテナンス・バックアップ自動化
-- ✅ **運用安定化**: データ整合性チェック・コレクション管理
-
-##### **中期対応: ChromaDB本体の改善** (2025年6月)
-- 🔄 **フォーク・改修**: 重要な設計問題の独自修正版開発
-- 🔄 **代替DB検証**: Qdrant、Weaviate等への移行検討
-
-##### **長期対応: 次世代ベクトルDB基盤** (2025年6月)
-- 🔮 **独自DB開発**: 根本的に安定性を重視した設計
-- 🔮 **ハイブリッド構成**: 複数ベクトルDBの使い分け・冗長化
-- 🔮 **エンタープライズ対応**: 高可用性・災害復旧・グローバル展開
-
-
-#### **即座実行可能な改善策**
+#### **即座解決可能だった改善策**
 ```bash
 # 1. NumPy配列バグ完全修正（2025年6月16日完了済み）
 # collection_inspection.py の SafeEmbeddingAnalyzer クラスで
@@ -557,13 +561,6 @@ docker run -d --name chromadb-stable \
 @chroma_health_check     # 毎時実行
 @chroma_backup_data      # 毎日実行
 @chroma_system_maintenance  # 週次実行
-```
-
-#### **段階別開発スケジュール**
-```
-2025年6月: MCP DB Hub Phase 1 (運用改善ツール)
-2025年6月: 代替DB検証
-2025年6月: 移行戦略実装・オープンソース公開へ展開
 ```
 
 ### 🛠️ **具体的な根本解決策**
@@ -614,4 +611,9 @@ MIT License
 
 ---
 
-*このプロジェクトは、43ツール・12カテゴリによる包括的ChromaDB運用管理システムです。現在は**運用レベルでの安定化**を実現しており、ChromaDB本体の設計問題については**段階的なアプローチ**（PR貢献・代替DB検証・次世代基盤開発）により根本解決を目指しています。MCP DB Hubにより、更なる運用安定性の向上を図っています。*
+*このプロジェクトは、58ツール・カテゴリ別による包括的ChromaDB-RAG運用管理システムです。現在は**運用レベルでの安定化**を実現しており、ChromaDB本体の設計問題については**段階的なアプローチ**（PR貢献・代替DB検証・次世代基盤開発）により根本解決を目指しています。MCP DB Hubにより、更なる運用安定性の向上を図っています。*
+
+## 重要な注意点とお断り
+*このプロジェクトのプログラムにおいて、ほぼ「Ａｉアシスト」によるものです。よって、監視や精査は私自身が続けているものの、予期しないハードコーディングや本稼働では不要となった処理も混在している事実があることにご注意いただき、各自の責任の上で稼働して利用頂けることをお願いすると共に、この旨、お断りとして記載しておきます*
+
+個人開発者:博多のごっちゃん
