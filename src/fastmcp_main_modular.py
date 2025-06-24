@@ -27,6 +27,7 @@ from modules.learning_tools import register_learning_tools
 from modules.monitoring_tools import register_monitoring_tools
 from modules.inspection_tools import register_inspection_tools
 from modules.integrity_tools import register_integrity_tools
+from modules.search_and_delete_tools import register_search_and_delete_tools  # 追加
 
 # メインサーバークラス
 class FastMCPChromaServer:
@@ -50,6 +51,7 @@ class FastMCPChromaServer:
         register_monitoring_tools(self.mcp, self.manager)
         register_inspection_tools(self.mcp, self.manager)
         register_integrity_tools(self.mcp, self.manager)
+        register_search_and_delete_tools(self.mcp, self.manager)  # 追加
     
     def run(self):
         """サーバー起動"""

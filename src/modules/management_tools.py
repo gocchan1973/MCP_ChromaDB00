@@ -47,43 +47,55 @@ def register_management_tools(mcp, manager):
     
     @mcp.tool()
     async def chroma_delete_collection(name: str, confirm: bool = False) -> dict:
-        """コレクション削除"""
+        """コレクション削除（confirm厳格化＆理由付きフィードバック強化）"""
         if not manager.initialized:
             await manager.initialize()
-        
-        if not confirm:
+
+        # confirmが厳密にTrue以外は削除不可
+        if confirm is not True:
             return {
                 "success": False,
-                "message": f"削除には confirm=True パラメータが必要です。Collection '{name}' を削除する場合は confirm=True を設定してください。",
-                "require_confirmation": True
+                "message": f"コレクション削除は明示的なconfirm=Trueが必須です。指定値: {confirm}",
+                "require_confirmation": True,
+                "reason": "安全性のため、confirm=True以外では絶対に削除できません。明示的にTrueを指定してください。"
             }
-        
+
         try:
             if manager.chroma_client:
                 # コレクション存在チェック
                 try:
                     collection = manager.chroma_client.get_collection(name)
                     document_count = collection.count()
-                except:
-                    return {"success": False, "message": f"Collection '{name}' not found"}
-                
+                except Exception as e:
+                    return {
+                        "success": False,
+                        "message": f"Collection '{name}' not found (削除不能)",
+                        "reason": str(e)
+                    }
+
                 # 削除実行
-                manager.chroma_client.delete_collection(name)
-                
+                try:
+                    manager.chroma_client.delete_collection(name)
+                except Exception as e:
+                    return {
+                        "success": False,
+                        "message": f"Collection '{name}' の削除に失敗しました",
+                        "reason": str(e)
+                    }
+
                 # キャッシュからも削除
                 if name in manager.collections:
                     del manager.collections[name]
-                
+
                 return {
                     "success": True,
                     "message": f"Collection '{name}' deleted successfully",
                     "documents_removed": document_count
                 }
             else:
-                return {"success": False, "message": "ChromaDB client not initialized"}
-                
+                return {"success": False, "message": "ChromaDB client not initialized", "reason": "ChromaDBクライアントが初期化されていません"}
         except Exception as e:
-            return {"success": False, "message": f"Error deleting collection: {str(e)}"}    
+            return {"success": False, "message": f"Error deleting collection: {str(e)}", "reason": str(e)}    
     @mcp.tool()
     async def chroma_add_documents(
         documents: list, 
