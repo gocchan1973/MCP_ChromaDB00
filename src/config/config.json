@@ -34,6 +34,7 @@
     "file_enabled": true,
     "console_enabled": true
   },
+  "memory_graph_dir": "C:/Users/Owner/AppData/Local/npm-cache/_npx/15b07286cbcc3329/node_modules/@modelcontextprotocol/server-memory/dist/index.js",
   "learning_error_log_dir": "F:/副業/VSC_WorkSpace/MCP_ChromaDB00/logs/learning_error_logs",
   "context_keywords": ["ブッ込み作戦", "新作戦名"]
 }

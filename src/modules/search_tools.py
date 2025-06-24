@@ -11,25 +11,24 @@ def register_search_tools(mcp, manager):
     
     @mcp.tool()
     async def chroma_search_text(query: str, n_results: int = 5, collection_name: Optional[str] = None) -> dict:
-        """テキスト検索"""
+        """テキスト検索（async/await・エラーハンドリング強化版）"""
+        import traceback
+        import asyncio
         if not manager.initialized:
-            await manager.initialize()
-        
+            try:
+                await manager.initialize()
+            except Exception as e:
+                return {"success": False, "message": f"Manager initialization failed: {str(e)}", "traceback": traceback.format_exc()}
         # グローバル設定からデフォルトコレクション名を取得
         if collection_name is None:
             global_settings = GlobalSettings()
             collection_name = str(global_settings.get_setting("default_collection.name", "general_knowledge"))
-        
         try:
             if collection_name not in manager.collections:
                 return {"success": False, "message": f"Collection '{collection_name}' not found"}
-            
             collection = manager.collections[collection_name]
-            results = collection.query(
-                query_texts=[query],
-                n_results=n_results
-            )
-            
+            # collection.queryは同期I/Oなのでasyncio.to_threadでラップ
+            results = await asyncio.to_thread(collection.query, query_texts=[query], n_results=n_results)
             return {
                 "success": True,
                 "query": query,
@@ -39,9 +38,8 @@ def register_search_tools(mcp, manager):
                     "metadatas": results["metadatas"][0] if results["metadatas"] else []
                 }
             }
-            
         except Exception as e:
-            return {"success": False, "message": f"Search error: {str(e)}"}    
+            return {"success": False, "message": f"Search error: {str(e)}", "traceback": traceback.format_exc()}
     @mcp.tool()
     async def chroma_search_filtered(
         query: str, 

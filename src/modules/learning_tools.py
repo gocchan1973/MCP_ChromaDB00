@@ -30,21 +30,35 @@ def register_learning_tools(mcp, manager):
         include_related_files: bool = True
     ) -> Dict[str, Any]:
         """
-        HTMLファイルとその関連ファイルをChromaDBに学習させる
+        HTMLファイルを無条件にMarkdownへ変換し、mdを議事録chunkerパイプラインでChromaDBに学習させる（新ロジック）。
         """
+        from modules.html_learning import html_to_md_unconditional
+        from modules.chroma_store_core import chroma_store_md_conversation
+        from pathlib import Path
+        import traceback
         # --- グローバル設定値のcollection_nameを優先 ---
         if not collection_name or collection_name == "None":
             global_settings = GlobalSettings()
             collection_name = str(global_settings.get_setting("default_collection.name"))
-        return chroma_store_html_impl(
-            html_path=html_path,
-            manager=manager,
-            collection_name=collection_name,
-            chunk_size=chunk_size,
-            overlap=overlap,
-            project=project,
-            include_related_files=include_related_files
-        )
+        try:
+            md_path = html_to_md_unconditional(str(html_path))
+            result = chroma_store_md_conversation(
+                file_path=md_path,
+                collection_name=collection_name,
+                project=project,
+                manager=manager
+            )
+            return {"success": result.get("success", False), "md_path": md_path, "result": result}
+        except Exception as e:
+            tb = traceback.format_exc()
+            log_learning_error({
+                "function": "chroma_store_html",
+                "file": html_path,
+                "collection": collection_name,
+                "error": str(e),
+                "traceback": tb
+            })
+            return {"success": False, "error": str(e)}
 
     @mcp.tool()
     def chroma_store_html_folder(
@@ -57,126 +71,63 @@ def register_learning_tools(mcp, manager):
         recursive: bool = False
     ) -> Dict[str, Any]:
         """
-        フォルダ内のHTMLファイルを一括でChromaDBに学習させる
-        Args:
-            folder_path: フォルダのパス
-            collection_name: 保存先コレクション（None=デフォルト使用）
-            chunk_size: テキストチャンクサイズ
-            overlap: チャンク間のオーバーラップ
-            project: プロジェクト名（メタデータ用）
-            include_related_files: 関連ファイルも含めるかどうか
-            recursive: サブフォルダも検索するかどうか
-        Returns: 学習結果
+        フォルダ内のHTMLファイルを一括でMarkdown化し、mdを議事録chunkerパイプラインでChromaDBに学習させる（新ロジック）。
         """
-        try:
-            # --- manager/chroma_clientの厳密な初期化チェック ---
-            if manager is None or not hasattr(manager, "initialized"):
-                return {"success": False, "error": "ChromaDB manager is not provided or invalid."}
-            if not manager.initialized:
-                manager.initialize()
-            if not hasattr(manager, "chroma_client") or manager.chroma_client is None:
-                return {"success": False, "error": "ChromaDB manager is not properly initialized (chroma_client is None)."}
-            # --- カレントディレクトリと絶対パス解決の安全化 ---
-            abs_folder_path = os.path.abspath(folder_path)
-            print(f"[chroma_store_html_folder] 現在のカレントディレクトリ: {os.getcwd()}")
-            print(f"[chroma_store_html_folder] 対象フォルダの絶対パス: {abs_folder_path}")
-            if not os.path.exists(abs_folder_path):
-                return {"success": False, "error": f"Folder not found: {abs_folder_path}"}
-            # --- グローバル設定値のcollection_nameを優先 ---
-            if not collection_name or collection_name == "None":
-                global_settings = GlobalSettings()
-                collection_name = str(global_settings.get_setting("default_collection.name"))
-            html_files = []
-            if recursive:
-                for root, dirs, files in os.walk(abs_folder_path):
-                    for file in files:
-                        if file.lower().endswith(('.html', '.htm')):
-                            html_files.append(os.path.join(root, file))
-            else:
-                for file in os.listdir(abs_folder_path):
+        from modules.html_learning import html_to_md_unconditional
+        from modules.chroma_store_core import chroma_store_md_conversation
+        from pathlib import Path
+        import os
+        import traceback
+        # --- グローバル設定値のcollection_nameを優先 ---
+        if not collection_name or collection_name == "None":
+            global_settings = GlobalSettings()
+            collection_name = str(global_settings.get_setting("default_collection.name"))
+        abs_folder_path = os.path.abspath(folder_path)
+        if not os.path.exists(abs_folder_path):
+            return {"success": False, "error": f"Folder not found: {abs_folder_path}"}
+        html_files = []
+        if recursive:
+            for root, dirs, files in os.walk(abs_folder_path):
+                for file in files:
                     if file.lower().endswith(('.html', '.htm')):
-                        html_files.append(os.path.join(abs_folder_path, file))
-            if not html_files:
-                return {"success": False, "error": f"No HTML files found in folder: {abs_folder_path}"}
-            results = []
-            total_chunks = 0
-            total_files = 0
-            collection_error = None
-            for html_file in html_files:
-                try:
-                    result = chroma_store_html_impl(
-                        html_path=html_file,
-                        manager=manager,
-                        collection_name=collection_name,
-                        chunk_size=chunk_size,
-                        overlap=overlap,
-                        project=project,
-                        include_related_files=include_related_files
-                    )
-                    # --- コレクション取得失敗時は即returnで全体中断 ---
-                    if not result.get("success") and result.get("error", "").startswith("Collection"):
-                        print(f"[ERROR] コレクション取得失敗: {result.get('error')}")
-                        results.append({
-                            "file": html_file,
-                            "success": False,
-                            "error": result.get("error")
-                        })
-                        collection_error = result.get("error")
-                        break
-                    if result.get("success"):
-                        total_chunks += result.get("chunks_added", 0)
-                        total_files += 1
-                    # --- 失敗時の詳細エラー・除外理由を標準出力に表示 ---
-                    if not result.get("success"):
-                        print(f"[ERROR] 学習失敗: {html_file}")
-                        if result.get("error"):
-                            print(f"  エラー内容: {result.get('error')}")
-                        if result.get("excluded"):
-                            print(f"  除外理由: {result.get('excluded')}")
-                        if result.get("excluded_samples"):
-                            print(f"  除外サンプル: {result.get('excluded_samples')}")
-                    results.append({
-                        "file": html_file,
-                        "success": result.get("success", False),
-                        "chunks": result.get("chunks_added", 0),
-                        "error": result.get("error") if not result.get("success") else None
-                    })
-                except Exception as e:
-                    print(f"[ERROR] 例外発生: {html_file} | {str(e)}")
-                    results.append({
-                        "file": html_file,
-                        "success": False,
-                        "error": str(e)
-                    })
-            # --- コレクション取得失敗時は全体エラーとして返す ---
-            if collection_error:
-                return {
-                    "success": False,
-                    "error": collection_error,
-                    "results": results
-                }
-            return {
-                "success": True,
-                "total_files_processed": total_files,
-                "total_chunks_added": total_chunks,
-                "files_found": len(html_files),
-                "results": results
-            }
-        except Exception as e:
-            log_learning_error({
-                "function": "chroma_store_html_folder",
-                "file": folder_path,
-                "collection": collection_name,
-                "error": str(e),
-                "params": {
-                    "chunk_size": chunk_size,
-                    "overlap": overlap,
-                    "project": project,
-                    "recursive": recursive
-                }
-            })
-            return {"success": False, "error": str(e)}
-    
+                        html_files.append(os.path.join(root, file))
+        else:
+            for file in os.listdir(abs_folder_path):
+                if file.lower().endswith(('.html', '.htm')):
+                    html_files.append(os.path.join(abs_folder_path, file))
+        if not html_files:
+            return {"success": False, "error": f"No HTML files found in folder: {abs_folder_path}"}
+        results = []
+        for html_path in html_files:
+            try:
+                md_path = html_to_md_unconditional(str(html_path))
+                result = chroma_store_md_conversation(
+                    file_path=md_path,
+                    collection_name=collection_name,
+                    project=project,
+                    manager=manager
+                )
+                results.append({"file": str(html_path), "md_path": md_path, "success": result.get("success", False), "error": result.get("error")})
+            except Exception as e:
+                tb = traceback.format_exc()
+                log_learning_error({
+                    "function": "chroma_store_html_folder",
+                    "file": html_path,
+                    "collection": collection_name,
+                    "error": str(e),
+                    "traceback": tb
+                })
+                results.append({"file": str(html_path), "success": False, "error": str(e)})
+        n_success = sum(1 for r in results if r["success"])
+        n_fail = len(results) - n_success
+        return {
+            "success": n_fail == 0,
+            "total_files": len(results),
+            "success_count": n_success,
+            "fail_count": n_fail,
+            "results": results,
+            "collection_name": collection_name
+        }
     @mcp.tool()
     def chroma_store_file_tool(
         file_path: str,
@@ -629,6 +580,82 @@ def register_learning_tools(mcp, manager):
         max_lines=10
     )
 
+    @mcp.tool()
+    def chroma_store_html_md_unified(
+        docs_dir: Optional[str] = None,
+        collection_name: Optional[str] = None,
+        project: Optional[str] = None,
+        log_path: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """
+        docsディレクトリ内のHTMLを一括でMarkdown化し、md会話chunkerでChromaDBにaddする統一パイプライン。
+        旧chroma_store_html/chroma_store_html_folderの代替。AIチャット特化型。
+        Args:
+            docs_dir: HTMLファイルを探索するディレクトリ（Noneならデフォルトdocs/）
+            collection_name: 保存先コレクション名（None=グローバル設定値）
+            project: プロジェクト名（メタデータ用）
+            log_path: ログファイルパス（Noneならlogs/learning_stdout.log）
+        Returns: 学習結果サマリー
+        """
+        from modules.html_learning import html_to_md_unconditional
+        from modules.chroma_store_core import chroma_store_md_conversation
+        from pathlib import Path
+        import os
+        import traceback
+        # ディレクトリ設定
+        if docs_dir is None:
+            docs_dir = str(Path(__file__).parent.parent.parent / 'docs')
+        docs_dir = os.path.abspath(docs_dir)
+        if not os.path.exists(docs_dir):
+            return {"success": False, "error": f"docs_dir not found: {docs_dir}"}
+        # コレクション名
+        if not collection_name or collection_name == "None":
+            global_settings = GlobalSettings()
+            collection_name = str(global_settings.get_setting("default_collection.name"))
+        if not collection_name or collection_name == "None":
+            return {"success": False, "error": "Default collection name not configured."}
+        # ログ
+        if log_path is None:
+            log_path = str(Path(__file__).parent.parent.parent / 'logs' / 'learning_stdout.log')
+        def log(msg):
+            with open(log_path, 'a', encoding='utf-8') as f:
+                f.write(msg + '\n')
+            print(msg, flush=True)
+        html_files = list(Path(docs_dir).glob('*.html'))
+        if not html_files:
+            log('No HTML files found.')
+            return {"success": False, "error": "No HTML files found in docs_dir.", "docs_dir": docs_dir}
+        results = []
+        for html_path in html_files:
+            try:
+                log(f'--- HTML→md変換: {html_path} ---')
+                md_path = html_to_md_unconditional(str(html_path))
+                log(f'生成md: {md_path}')
+                log(f'--- md会話chunker学習: {md_path} ---')
+                result = chroma_store_md_conversation(
+                    file_path=md_path,
+                    collection_name=collection_name,
+                    project=project,
+                    manager=manager
+                )
+                log(f'学習結果: {result}')
+                results.append({"file": str(html_path), "success": result.get("success", False), "error": result.get("error")})
+            except Exception as e:
+                tb = traceback.format_exc()
+                log(f'Error processing {html_path}: {e}\n{tb}')
+                results.append({"file": str(html_path), "success": False, "error": str(e)})
+        n_success = sum(1 for r in results if r["success"])
+        n_fail = len(results) - n_success
+        return {
+            "success": n_fail == 0,
+            "total_files": len(results),
+            "success_count": n_success,
+            "fail_count": n_fail,
+            "results": results,
+            "collection_name": collection_name
+        }
+
+    # 旧chroma_store_html/chroma_store_html_folderは非推奨: HTML直接addは廃止、chroma_store_html_md_unifiedを推奨
 __all__ = [
     'chroma_store_file',
     # ...他に外部公開したい関数があればここに追加...

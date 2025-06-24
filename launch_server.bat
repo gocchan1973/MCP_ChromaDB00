@@ -19,7 +19,7 @@ echo Working Directory: %~dp0
 
 "%PYTHON_EXEC%" -c "import sys; print('Python Path:', sys.path)"
 
-"%PYTHON_EXEC%" -m src.main
+"%PYTHON_EXEC%" -m src.fastmcp_main_modular
 
 if %ERRORLEVEL% NEQ 0 (
     echo.

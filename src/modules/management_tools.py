@@ -143,23 +143,21 @@ def register_management_tools(mcp, manager):
     
     @mcp.tool()
     async def chroma_get_documents(collection_name: str, limit: int = 100, offset: int = 0) -> dict:
-        """ドキュメント取得"""
+        """ドキュメント取得（async/await・エラーハンドリング強化版）"""
+        import traceback
         if not manager.initialized:
-            await manager.initialize()
-        
+            try:
+                manager.initialize()  # awaitを外す
+            except Exception as e:
+                return {"success": False, "message": f"Manager initialization failed: {str(e)}", "traceback": traceback.format_exc()}
         try:
             if manager.chroma_client is not None:
                 try:
                     collection = manager.chroma_client.get_collection(collection_name)
-                except:
-                    return {"success": False, "message": f"Collection '{collection_name}' not found"}
-                
-                # ドキュメント取得
-                results = collection.get(
-                    limit=limit,
-                    offset=offset
-                )
-                
+                except Exception as e:
+                    return {"success": False, "message": f"Collection '{collection_name}' not found: {str(e)}", "traceback": traceback.format_exc()}
+                import asyncio
+                results = await asyncio.to_thread(collection.get, limit=limit, offset=offset)
                 documents = results.get("documents", [])
                 return {
                     "success": True,
@@ -171,46 +169,43 @@ def register_management_tools(mcp, manager):
                 }
             else:
                 return {"success": False, "message": "ChromaDB client not initialized"}
-                
         except Exception as e:
-            return {"success": False, "message": f"Error getting documents: {str(e)}"}
+            return {"success": False, "message": f"Error getting documents: {str(e)}", "traceback": traceback.format_exc()}
     
     @mcp.tool()
     async def chroma_collection_stats(collection_name: str) -> dict:
-        """特定コレクションの詳細統計"""
+        """特定コレクションの詳細統計（async/await・エラーハンドリング強化版）"""
+        import traceback
         if not manager.initialized:
-            await manager.initialize()
-        
+            try:
+                manager.initialize()  # awaitを外す
+            except Exception as e:
+                return {"success": False, "message": f"Manager initialization failed: {str(e)}", "traceback": traceback.format_exc()}
         try:
-            if manager.chroma_client:
-                try:
-                    collection = manager.chroma_client.get_collection(collection_name)
-                    document_count = collection.count()
-                    
-                    # サンプルドキュメント取得
-                    sample_results = collection.get(limit=min(5, document_count))
-                    
-                    # メタデータ分析
-                    metadata_keys = set()
-                    if sample_results.get("metadatas"):
-                        for metadata in sample_results["metadatas"]:
-                            if isinstance(metadata, dict):
-                                metadata_keys.update(metadata.keys())
-                    
-                    return {
-                        "status": "✅ Success",
-                        "collection_name": collection_name,
-                        "document_count": document_count,
-                        "metadata_fields": list(metadata_keys),
-                        "sample_documents_count": len(sample_results.get("documents", [])),
-                        "analysis_timestamp": datetime.now().isoformat()
-                    }
-                except:
-                    return {"success": False, "message": f"Collection '{collection_name}' not found"}
-            else:
+            if not manager.chroma_client:
                 return {"success": False, "message": "ChromaDB client not initialized"}
+            try:
+                collection = manager.chroma_client.get_collection(collection_name)
+                import asyncio
+                document_count = await asyncio.to_thread(collection.count)
+                sample_results = await asyncio.to_thread(collection.get, min(5, document_count))
+                metadata_keys = set()
+                if sample_results.get("metadatas"):
+                    for metadata in sample_results["metadatas"]:
+                        if isinstance(metadata, dict):
+                            metadata_keys.update(metadata.keys())
+                return {
+                    "status": "✅ Success",
+                    "collection_name": collection_name,
+                    "document_count": document_count,
+                    "metadata_fields": list(metadata_keys),
+                    "sample_documents_count": len(sample_results.get("documents", [])),
+                    "analysis_timestamp": datetime.now().isoformat()
+                }
+            except Exception as e:
+                return {"success": False, "message": f"Collection '{collection_name}' not found or error: {str(e)}", "traceback": traceback.format_exc()}
         except Exception as e:
-            return {"success": False, "message": f"Error analyzing collection: {str(e)}"}
+            return {"success": False, "message": f"Error analyzing collection: {str(e)}", "traceback": traceback.format_exc()}
 
     @mcp.tool()
     async def chroma_merge_collections(source_collections: list, target_collection: str, delete_sources: bool = False) -> dict:
