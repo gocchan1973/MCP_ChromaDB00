@@ -312,3 +312,164 @@ def register_storage_tools(mcp, manager):
                 "install_command": "pip install PyPDF2",
                 "features": []
             }
+    @mcp.tool()
+    async def chroma_flexible_search(
+        collection_name: Optional[str] = None,
+        query: Optional[str] = None,
+        date: Optional[str] = None,
+        time: Optional[str] = None,
+        user_pattern: Optional[str] = None,
+        regex: Optional[str] = None,
+        max_results: int = 50,
+        extract_user_names: Optional[bool] = None
+    ) -> dict:
+        """柔軟な条件でChromaDBからドキュメントを検索（AND条件可）
+        - collection_name: コレクション名（省略時はデフォルト）
+        - query: キーワード（部分一致）
+        - date: 日付文字列（例: '2025-05-01', 'R07.05.01', '5月1日' など）
+        - time: 時刻文字列（例: '10:00', '10時' など）
+        - user_pattern: 人名パターン（正規表現可）
+        - regex: 任意の正規表現
+        - max_results: 最大件数
+        - extract_user_names: Trueで利用者名リストを返す（未指定時、dateとtime両方指定なら自動で有効）
+        """
+        if not manager.initialized:
+            await manager.initialize()
+        if collection_name is None:
+            global_settings = GlobalSettings()
+            collection_name = str(global_settings.get_setting("default_collection.name", "sister_chat_history_v4"))
+        if collection_name not in manager.collections:
+            return {"success": False, "message": f"コレクション '{collection_name}' が存在しません"}
+        collection = manager.collections[collection_name]
+        # 検索条件を組み立て
+        conditions = []
+        if query:
+            conditions.append(query)
+        if date:
+            conditions.append(date)
+        if time:
+            conditions.append(time)
+        # ドキュメント取得
+        docs = collection.get()["documents"]
+        results = []
+        import re as _re
+        for doc in docs:
+            hit = True
+            for cond in conditions:
+                if cond and cond not in doc:
+                    hit = False
+                    break
+            if hit and user_pattern:
+                if not _re.search(user_pattern, doc):
+                    hit = False
+            if hit and regex:
+                if not _re.search(regex, doc):
+                    hit = False
+            if hit:
+                results.append(doc)
+            if len(results) >= max_results:
+                break
+        # dateとtime両方指定時は自動で利用者名抽出モード
+        auto_extract = extract_user_names if extract_user_names is not None else (date is not None and time is not None)
+        if auto_extract:
+            user_name_pattern = user_pattern or r"(?:利用者名|氏名)[：: ]*([\w一-龠ぁ-んァ-ヴー・\s]+)"
+            user_names = set()
+            for doc in results:
+                for match in _re.findall(user_name_pattern, doc):
+                    user_names.add(match.strip())
+            return {
+                "success": True,
+                "message": f"{len(user_names)}名の利用者名を抽出",
+                "user_names": sorted(user_names),
+                "hit_count": len(results)
+            }
+        return {
+            "success": True,
+            "message": f"{len(results)}件ヒット",
+            "results": results
+        }
+    @mcp.tool()
+    async def chroma_extract_user_names_by_date_time(
+        date: str,
+        time: str,
+        collection_name: Optional[str] = None,
+        user_pattern: Optional[str] = None,
+        max_results: int = 100
+    ) -> dict:
+        """
+        【利用者名抽出ツール】
+        指定した日付・時刻に訪問している利用者名を一覧抽出します。
+        例: 5月1日・10時に来た全利用者名を一括取得。
+        
+        Parameters:
+        - date: 日付文字列（例: '5月1日' など。和暦・西暦・略式も可）
+        - time: 時刻文字列（例: '10時' など。分単位も可）
+        - collection_name: コレクション名（省略時はデフォルト）
+        - user_pattern: 人名パターン（正規表現可、省略時は自動判定）
+        - max_results: 最大検索件数
+        
+        Returns:
+        - user_names: 利用者名リスト
+        - hit_count: 該当ドキュメント数
+        - message: 結果メッセージ
+        - success: 成功フラグ
+        """
+        # chroma_flexible_searchを内部利用
+        result = await chroma_flexible_search(
+            collection_name=collection_name,
+            date=date,
+            time=time,
+            user_pattern=user_pattern,
+            max_results=max_results,
+            extract_user_names=True
+        )
+        return result
+
+    @mcp.tool()
+    async def chroma_user_names_stats(
+        collection_name: Optional[str] = None,
+        date: Optional[str] = None,
+        time: Optional[str] = None,
+        user_pattern: Optional[str] = None,
+        max_results: int = 1000
+    ) -> dict:
+        """
+        【利用者名統計ツール】
+        指定コレクション内の全データ、または日付・時刻条件で利用者名の出現頻度・一覧を集計します。
+        - collection_name: コレクション名（省略時はデフォルト）
+        - date: 日付文字列（例: '5月1日' など）
+        - time: 時刻文字列（例: '10時' など）
+        - user_pattern: 人名パターン（正規表現可、省略時は自動判定）
+        - max_results: 最大検索件数
+        
+        Returns:
+        - user_name_counts: 利用者名ごとの出現回数（降順）
+        - unique_user_count: ユニーク利用者数
+        - total_mentions: 利用者名出現総数
+        - user_names: 利用者名リスト
+        - message: 結果メッセージ
+        - success: 成功フラグ
+        """
+        # chroma_flexible_searchで条件抽出
+        result = await chroma_flexible_search(
+            collection_name=collection_name,
+            date=date,
+            time=time,
+            user_pattern=user_pattern,
+            max_results=max_results,
+            extract_user_names=True
+        )
+        if not result.get("success"):
+            return result
+        from collections import Counter
+        user_names = result.get("user_names", [])
+        user_name_counts = dict(Counter(user_names))
+        sorted_counts = dict(sorted(user_name_counts.items(), key=lambda x: x[1], reverse=True))
+        return {
+            "success": True,
+            "message": f"利用者名{len(sorted_counts)}名、総出現{sum(sorted_counts.values())}件",
+            "user_name_counts": sorted_counts,
+            "unique_user_count": len(sorted_counts),
+            "total_mentions": sum(sorted_counts.values()),
+            "user_names": list(sorted_counts.keys())
+        }
