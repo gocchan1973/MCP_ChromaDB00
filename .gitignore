@@ -44,6 +44,7 @@ config/private*.yaml
 
 docs_Ahrcive/
 dos_This_Spec/
+.github/
 
 # データベースファイル
 *.db
