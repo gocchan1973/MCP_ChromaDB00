@@ -7,10 +7,6 @@ from typing import Dict, Any, Optional
 import os
 import json
 from pathlib import Path
-import logging
-
-
-logger = logging.getLogger(__name__)
 
 class GlobalSettings:
     """グローバル設定管理クラス（改良版）"""
@@ -19,7 +15,7 @@ class GlobalSettings:
         """設定を初期化"""
         self._config_file = Path(__file__).parent / "config.json"
         self.config_path = str(self._config_file.resolve())  # 追加: 絶対パスを属性に
-        logger.debug("[GlobalSettings.__init__] 設定ファイル絶対パス: %s", self.config_path)
+        print(f"[GlobalSettings.__init__] 設定ファイル絶対パス: {self.config_path}")
         self._settings = self._load_default_settings()
         # ここで必ず設定ファイルを反映
         if self._config_file.exists():
@@ -47,7 +43,7 @@ class GlobalSettings:
                             abs_path = self._config_file.parent.parent / config_path
                             return str(abs_path)
             except Exception as e:
-                logger.warning("設定ファイル読み込みエラー: %s", e)
+                print(f"設定ファイル読み込みエラー: {e}")
           # 3. 明示的なデフォルト（推測なし）
         # プロジェクトルートを動的に検出
         current_file = Path(__file__)
@@ -62,7 +58,7 @@ class GlobalSettings:
         # VSC_WorkSpaceレベルに移動してIrukaWorkspaceを探す
         workspace_root = project_root.parent
         default_path = workspace_root / "IrukaWorkspace" / "shared__ChromaDB_"
-        logger.info("デフォルトパスを使用: %s", default_path)
+        print(f"デフォルトパスを使用: {default_path}")
         return str(default_path)
 
     def _load_default_settings(self) -> Dict[str, Any]:
@@ -156,11 +152,11 @@ class GlobalSettings:
             path = Path(self.get_database_path())
             # 親ディレクトリが存在するか確認
             if not path.parent.exists():
-                logger.warning("警告: データベースの親ディレクトリが存在しません: %s", path.parent)
+                print(f"警告: データベースの親ディレクトリが存在しません: {path.parent}")
                 return False
             return True
         except Exception as e:
-            logger.error("パス検証エラー: %s", e)
+            print(f"パス検証エラー: {e}")
             return False
     
     def get_server_config(self) -> Dict[str, Any]:
@@ -205,15 +201,12 @@ class GlobalSettings:
                 current = current[key]
             # context_keywords取得時は必ずprint
             if key_path == "context_keywords":
-                logger.debug("[GlobalSettings.get_setting] context_keywords取得: %s", current)
-                logger.debug("[GlobalSettings.get_setting] 参照設定ファイル: %s", getattr(self, 'config_path', '属性なし'))
+                print(f"[GlobalSettings.get_setting] context_keywords取得: {current}")
+                print(f"[GlobalSettings.get_setting] 参照設定ファイル: {getattr(self, 'config_path', '属性なし')}")
             return current
         except (KeyError, TypeError):
             if key_path == "context_keywords":
-                logger.warning(
-                    "[GlobalSettings.get_setting] context_keywords取得失敗 (None) 参照設定ファイル: %s",
-                    getattr(self, 'config_path', '属性なし'),
-                )
+                print(f"[GlobalSettings.get_setting] context_keywords取得失敗 (None) 参照設定ファイル: {getattr(self, 'config_path', '属性なし')}")
             return default
     
     def export_config(self) -> Dict[str, Any]:
@@ -225,15 +218,15 @@ class GlobalSettings:
         if config_path is None:
             config_path = str(self._config_file)
         self.config_path = str(Path(config_path).resolve())  # 追加: 読み込んだパスを属性に
-        logger.debug("[GlobalSettings.load_from_file] 設定ファイル読込: %s", self.config_path)
+        print(f"[GlobalSettings.load_from_file] 設定ファイル読込: {self.config_path}")
         try:
             with open(config_path, 'r', encoding='utf-8') as f:
                 config = json.load(f)
                 self._settings.update(config)
         except FileNotFoundError:
-            logger.warning("設定ファイルが見つかりません: %s", config_path)
+            print(f"設定ファイルが見つかりません: {config_path}")
         except json.JSONDecodeError as e:
-            logger.error("設定ファイルの形式が正しくありません: %s", e)
+            print(f"設定ファイルの形式が正しくありません: {e}")
     
     def save_to_file(self, config_path: Optional[str] = None) -> None:
         """設定をファイルに保存（JSON）"""
@@ -245,38 +238,38 @@ class GlobalSettings:
             with open(config_path, 'w', encoding='utf-8') as f:
                 json.dump(self._settings, f, indent=2, ensure_ascii=False)
         except Exception as e:
-            logger.error("設定ファイルの保存に失敗しました: %s", e)
+            print(f"設定ファイルの保存に失敗しました: {e}")
 
     def verify_configuration(self) -> bool:
         """設定の整合性をチェック"""
         try:
-            logger.info("=== 設定検証開始 ===")
+            print("=== 設定検証開始 ===")
             
             # データベースパス検証
             db_path = self.get_database_path()
-            logger.info("データベースパス: %s", db_path)
+            print(f"データベースパス: {db_path}")
             
             if self.validate_database_path():
-                logger.info("✓ データベースパス検証成功")
+                print("✓ データベースパス検証成功")
             else:
-                logger.warning("✗ データベースパス検証失敗")
+                print("✗ データベースパス検証失敗")
                 return False
             
             # コレクション設定確認
             collection = self.get_default_collection()
-            logger.info("デフォルトコレクション: %s", collection)
+            print(f"デフォルトコレクション: {collection}")
             
             # 設定ファイル確認
             if self._config_file.exists():
-                logger.info("✓ 設定ファイル存在確認: %s", self._config_file)
+                print(f"✓ 設定ファイル存在確認: {self._config_file}")
             else:
-                logger.warning("! 設定ファイル未作成: %s", self._config_file)
-
-            logger.info("=== 設定検証完了 ===")
+                print(f"! 設定ファイル未作成: {self._config_file}")
+            
+            print("=== 設定検証完了 ===")
             return True
-
+            
         except Exception as e:
-            logger.error("設定検証エラー: %s", e)
+            print(f"設定検証エラー: {e}")
             return False
     
     def get_learning_error_log_dir(self) -> str:
@@ -312,20 +305,3 @@ if os.getenv("MCP_DEFAULT_COLLECTION"):
 
 if os.getenv("MCP_DATABASE_PATH"):
     settings.update_setting("database.path", os.getenv("MCP_DATABASE_PATH"))
-
-# ログ設定を反映
-log_config = settings.get_setting("logging", {})
-log_level = getattr(logging, log_config.get("level", "INFO").upper(), logging.INFO)
-handlers = []
-
-if log_config.get("console_enabled", True):
-    console_handler = logging.StreamHandler()
-    console_handler.setFormatter(logging.Formatter(log_config.get("format")))
-    handlers.append(console_handler)
-
-if log_config.get("file_enabled"):
-    file_handler = logging.FileHandler("global_settings.log")
-    file_handler.setFormatter(logging.Formatter(log_config.get("format")))
-    handlers.append(file_handler)
-
-logging.basicConfig(level=log_level, handlers=handlers, force=True)
